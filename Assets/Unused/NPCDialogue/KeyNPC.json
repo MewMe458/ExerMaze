@@ -1,0 +1,14 @@
+{
+  "npcId": "KeyNPC",
+  "states": [
+    { "stateId": "NoFood", 
+      "lines": ["Got something you might be looking for... but man, my stomach’s not letting me think straight.", "You need something? I might be able to help... just feeling a bit off right now. Kinda hungry, you know?", "I’ve been holding onto this thing—feels like it should go to someone else. Just... not on an empty stomach."] 
+    },
+    { "stateId": "HasFood", 
+      "lines": ["Hey, thanks. That really helps. Here, take this—I think you’ll find it useful.", "Appreciate it. Been needing that. You can have this, seems like it’ll do more good with you."] 
+    },
+    { "stateId": "Traded", 
+      "lines": ["Thanks again for earlier. Hope that thing helped you out.", "Wish I had more to offer, but I’m all out. Take care, alright?", "You’ve already got what I had. Just... don’t go losing it.", "Still appreciate that food. People don’t usually think to help."] 
+    }
+  ]
+}

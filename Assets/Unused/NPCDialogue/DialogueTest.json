@@ -1,0 +1,8 @@
+{
+  "npcId": "DialogueTest",
+  "states": [
+    { "stateId": "Default", 
+      "lines": ["A soda can help boost your energy, try find one.", "There's a guy that might help you find the way."] 
+    }
+  ]
+}
