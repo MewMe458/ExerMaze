@@ -19,8 +19,8 @@ public class AutoMG3D_1010 : MonoBehaviour
     [SerializeField] private int seed;
 
     [Header("Maze Dimensions")]
-    [SerializeField] private int width = 10;
-    [SerializeField] private int depth = 10;
+    [SerializeField] private int width = 12;
+    [SerializeField] private int depth = 12;
     private const int height = 1; // Fixed height
 
     [Header("Cell Size")]
@@ -700,52 +700,6 @@ public class AutoMG3D_1010 : MonoBehaviour
             directions[randomIndex] = temp;
         }
     }
-
-    // private void PlaceEndGoalAtFarthestCell()
-    // {
-    //     if (endGoalPrefab == null)
-    //         return;
-
-    //     Vector3Int start = Vector3Int.zero;
-
-    //     Queue<MazeCell> queue = new Queue<MazeCell>();
-    //     MazeCell startCell = maze[start.x, start.y, start.z];
-
-    //     startCell.distance = 0;
-    //     queue.Enqueue(startCell);
-
-    //     MazeCell farthestCell = startCell;
-
-    //     while (queue.Count > 0)
-    //     {
-    //         MazeCell current = queue.Dequeue();
-
-    //         if (current.distance > farthestCell.distance)
-    //             farthestCell = current;
-
-    //         for (int i = 0; i < directions.Length; i++)
-    //         {
-    //             // Wall exists → cannot move
-    //             if (current.walls[i])
-    //                 continue;
-
-    //             Vector3Int nextPos = current.position + directions[i];
-
-    //             if (!IsInBounds(nextPos))
-    //                 continue;
-
-    //             MazeCell neighbor = maze[nextPos.x, nextPos.y, nextPos.z];
-
-    //             if (neighbor.distance != -1)
-    //                 continue;
-
-    //             neighbor.distance = current.distance + 1;
-    //             queue.Enqueue(neighbor);
-    //         }
-    //     }
-
-    //     SpawnEndGoal(farthestCell.position);
-    // }
 
     private void PlaceEndGoalAtRandomCell(bool avoidCenterRoom = true)
     {

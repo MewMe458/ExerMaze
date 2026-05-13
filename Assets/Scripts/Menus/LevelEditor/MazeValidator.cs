@@ -56,95 +56,6 @@ public class MazeValidator : MonoBehaviour
             }
 
             return (true, path);
-
-        // if (!CheckSquareMaze(mazeData))
-        // {
-        //     if (showUIMessages)
-        //     {
-        //         Debug.Log("Validation failed: Maze must be square.");
-        //         ShowWarning("Maze must be square (rows must equal columns)!");
-        //     }
-        //     return (false, null);
-        // }
-
-        // if (!CheckSizeAndCellCount(mazeData))
-        // {
-        //     if (showUIMessages)
-        //     {
-        //         Debug.Log("Validation failed: Invalid size or cell count.");
-        //         ShowWarning(mazeData.cells == null ? "Invalid maze data! Cell count does not match dimensions!" : "Maze size out of range! Must be between 7x7 and 11x11!");
-        //     }
-        //     return (false, null);
-        // }
-
-        // if (!CheckStartAndEnd(mazeData))
-        // {
-        //     if (showUIMessages)
-        //     {
-        //         Debug.Log("Validation failed: Invalid start or end placement.");
-        //         ShowWarning("Invalid start or end placement!");
-        //     }
-        //     return (false, null);
-        // }
-
-        // var (wallSuccess, wallMessage, wallDelta) = CheckWallCount(mazeData);
-        // if (!wallSuccess)
-        // {
-        //     if (showUIMessages)
-        //     {
-        //         Debug.Log("Validation failed: Incorrect wall count.");
-        //         ShowWarning(wallMessage);
-        //     }
-        //     return (false, null);
-        // }
-
-        // if (!CheckWallDensity(mazeData))
-        // {
-        //     if (showUIMessages)
-        //     {
-        //         Debug.Log("Validation failed: Too many cells with no walls.");
-        //         ShowWarning($"Too many cells with no walls!");
-        //     }
-        //     return (false, null);
-        // }
-
-        // var pathData = pathfinder.FindPath(mazeData);
-        // if (pathData.path == null || pathData.pathLength < 2 * mazeData.rows - 2)
-        // {
-        //     if (showUIMessages)
-        //     {
-        //         Debug.Log("Validation failed: No valid path or insufficient path length.");
-        //         ShowWarning("No valid path or insufficient path length!");
-        //     }
-        //     return (false, null);
-        // }
-
-        // if (pathData.turns < mazeData.rows / 2)
-        // {
-        //     if (showUIMessages)
-        //     {
-        //         Debug.Log("Validation failed: Insufficient turns.");
-        //         ShowWarning("Insufficient turns in the path!");
-        //     }
-        //     return (false, null);
-        // }
-
-        // if (!pathfinder.CheckAccessibleCells(mazeData))
-        // {
-        //     if (showUIMessages)
-        //     {
-        //         Debug.Log("Validation failed: Not all cells accessible.");
-        //         ShowWarning("Not all cells are accessible from the start!");
-        //     }
-        //     return (false, null);
-        // }
-
-        // if (showUIMessages && showValidMessage)
-        // {
-        //     Debug.Log("Maze is valid.");
-        //     ShowValidMessage("Maze is valid!");
-        // }
-        // return (true, pathData.path);
     }
 
     public bool CheckSquareMaze(MazeData mazeData)
@@ -156,7 +67,7 @@ public class MazeValidator : MonoBehaviour
     public bool CheckSizeAndCellCount(MazeData mazeData)
     {
         if (mazeData == null || mazeData.cells == null) return false;
-        if (mazeData.rows < 7 || mazeData.rows > 42 || mazeData.columns < 7 || mazeData.columns > 42) return false;
+        if (mazeData.rows < 7 || mazeData.rows > 43 || mazeData.columns < 7 || mazeData.columns > 43) return false;
         return mazeData.cells.GetLength(0) == mazeData.rows && mazeData.cells.GetLength(1) == mazeData.columns;
     }
 

@@ -59,7 +59,7 @@ public class CustomLevelValidator : MonoBehaviour
 
     private bool CheckSizeAndCellCount(MazeData mazeData)
     {
-        if (mazeData.rows < 7 || mazeData.rows > 42 || mazeData.columns < 7 || mazeData.columns > 42) return false;
+        if (mazeData.rows < 7 || mazeData.rows > 43 || mazeData.columns < 7 || mazeData.columns > 43) return false;
         return mazeData.cells.GetLength(0) == mazeData.rows && mazeData.cells.GetLength(1) == mazeData.columns;
     }
 

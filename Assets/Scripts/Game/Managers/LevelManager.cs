@@ -433,26 +433,6 @@ public class LevelManager : MonoBehaviour
         Time.timeScale = 0f;
 
         SceneManager.LoadScene("ContinueChoiceScene", LoadSceneMode.Additive);
-
-        // Debug.Log("Level Completed");
-        // CurrentLevelState = LevelState.Completed;
-        // if (BLEManager.Instance != null && BLEManager.Instance.bleConnect != null)
-        // {
-        //     BLEManager.Instance.bleConnect.UpdateSensorStateOnBLE("stop"); // Stop sensors
-        // }
-        // if (levelEventSystem != null)
-        // {
-        //     levelEventSystem.enabled = false; // Disable main level EventSystem
-        //     Debug.Log("Disabled main level EventSystem for LevelCompleteMenu");
-        // }
-        // Cursor.visible = true; // Show cursor
-        // Cursor.lockState = CursorLockMode.None; // Unlock cursor
-        // SceneManager.LoadScene(completeMenuScene, LoadSceneMode.Additive);
-        // if (timer != null)
-        // {
-        //     timer.StopTimer();
-        // }
-        // Time.timeScale = 0f; // Stop the game when completed
     }
 
     public float GetFinalTime()

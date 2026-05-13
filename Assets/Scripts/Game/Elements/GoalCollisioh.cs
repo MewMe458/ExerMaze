@@ -8,16 +8,6 @@ public class GoalCollision : MonoBehaviour
         if (other.CompareTag("Player"))
         {
             LevelManager levelManager = FindAnyObjectByType<LevelManager>();
-            //InventoryManager inventoryManager = FindAnyObjectByType<InventoryManager>();
-            //if (levelManager == null || inventoryManager == null) return;
-            //if (inventoryManager.HasItem("Key", 1))
-            //{
-            //    levelManager.CompleteLevel();
-            //}
-            //else
-            //{
-            //    levelManager.ShowGoalMessage("You need a key!");
-            //}
             if (levelManager != null)
             {
                 levelManager.CompleteLevel();
@@ -28,13 +18,4 @@ public class GoalCollision : MonoBehaviour
             }
         }
     }
-    //private void OnTriggerExit(Collider other)
-    //{
-    //    if (other.CompareTag("Player"))
-    //    {
-    //        LevelManager levelManager = FindAnyObjectByType<LevelManager>();
-    //        if (levelManager != null)
-    //            levelManager.HideGoalMessage();
-    //    }
-    //}
 }

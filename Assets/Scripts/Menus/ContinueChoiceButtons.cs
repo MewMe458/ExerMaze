@@ -19,8 +19,16 @@ public class ContinueChoice : MonoBehaviour
     {
         GPXDataPersistence.IsContinuingSession = true;
         Time.timeScale = 1f;
-        // Reloads the random level scene with existing GameManager dimensions
-        SceneManager.LoadScene("RandomLevel"); 
+
+        // ADD THESE LINES: Clear the custom level references in GameManager
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.ClearCurrentLevelName();        // [cite: 92]
+            GameManager.Instance.ClearCurrentCustomLevelPath();  // [cite: 93]
+        }
+
+        // Now load the RandomLevel scene
+        SceneManager.LoadScene("RandomLevel"); // [cite: 77]
     }
 
     public void OnClickStop()
