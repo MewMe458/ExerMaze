@@ -14,6 +14,19 @@ public class MazeGridRenderer : MonoBehaviour
     [SerializeField] private Button recenterButton;
     [SerializeField] private TMP_Text zoomSizeText;
     [SerializeField] private RectTransform contentRectTransform;
+    // [SerializeField] private List<Color> materialPreviewColors;
+    [SerializeField] public List<WallMaterialData> wallMaterials;
+
+    [Header("Element Prefabs")]
+    public GameObject dogNPCPrefab;
+    public GameObject bonePrefab;
+    public GameObject shieldPrefab;
+    public GameObject starPrefab;
+    public GameObject slowPotionPrefab;
+    public GameObject teleporterPrefab;
+
+    // Keeps track of spawned elements so they can be removed if overridden
+    private Dictionary<Vector2Int, GameObject> spawnedElements = new Dictionary<Vector2Int, GameObject>();
 
     private MazeInputHandler inputHandler;
     private Button[,] cellButtons;
@@ -394,13 +407,12 @@ public class MazeGridRenderer : MonoBehaviour
             return Color.green;
         else if (mazeData.cells[x, y].IsGoal)
             return Color.red;
-        
-        // NEW: If a material index exists, give the cell a subtle tint based on that index
-        if (mazeData.cells[x, y].MaterialIndex != -1)
+
+        // Fetch color from the centralized WallMaterialData list
+        int matIndex = mazeData.cells[x, y].MaterialIndex;
+        if (wallMaterials != null && matIndex >= 0 && matIndex < wallMaterials.Count)
         {
-            // Generate a stable color from the index so different textures look different in 2D
-            float hue = (float)mazeData.cells[x, y].MaterialIndex / 40f; // Assuming 24 materials
-            return Color.HSVToRGB(hue, 0.2f, 1f); // 20% saturation for a light tint
+            return wallMaterials[matIndex].previewColor;
         }
 
         return Color.white;
@@ -428,6 +440,56 @@ public class MazeGridRenderer : MonoBehaviour
         }
         Debug.LogWarning("Sprite not found for index: " + index + ". Using default sprite.");
         return wallSprites != null && wallSprites.Length > 0 && wallSprites[15] != null ? wallSprites[15] : null;
+    }
+
+    // This method handles drawing the specific element
+    public void DrawElement(MazeData.ElementData element)
+    {
+        GameObject prefabToSpawn = GetPrefabForElementType(element.elementType);
+        if (prefabToSpawn == null) 
+        {
+            Debug.LogError($"Prefab for {element.elementType} is missing!");
+            return;
+        }
+
+        // Calculate world position based on your grid constraints
+        // (Assuming standard 1x1 grid size, adjust if your cells are scaled differently)
+        Vector3 spawnPos = new Vector3(element.position.x, 0, element.position.y); 
+        
+        GameObject newElement = Instantiate(prefabToSpawn, spawnPos, Quaternion.identity, transform);
+        spawnedElements[element.position] = newElement;
+    }
+
+    public void RemoveElementVisual(Vector2Int position)
+    {
+        if (spawnedElements.TryGetValue(position, out GameObject elementObj))
+        {
+            Destroy(elementObj);
+            spawnedElements.Remove(position);
+        }
+    }
+
+    public void ClearAllElements()
+    {
+        foreach (var element in spawnedElements.Values)
+        {
+            Destroy(element);
+        }
+        spawnedElements.Clear();
+    }
+
+    private GameObject GetPrefabForElementType(string type)
+    {
+        switch (type)
+        {
+            case "DogNPC": return dogNPCPrefab;
+            case "Bone": return bonePrefab;
+            case "Shield": return shieldPrefab;
+            case "Star": return starPrefab;
+            case "SlowPotion": return slowPotionPrefab;
+            case "Teleporter": return teleporterPrefab;
+            default: return null;
+        }
     }
 
     private void UpdateZoomText()

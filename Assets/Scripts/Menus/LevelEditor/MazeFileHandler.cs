@@ -107,8 +107,8 @@ public class MazeFileHandler : MonoBehaviour
 
         inputHandler.UpdateMazeDataWithToggles();
 
-        // IMPROVEMENT: Apply the Wall Texture Algorithm before exporting
-        ApplyWallTextureAlgorithm(mazeData);
+        // // IMPROVEMENT: Apply the Wall Texture Algorithm before exporting
+        // ApplyWallTextureAlgorithm(mazeData);
 
         mazeData.PrepareForSerialization();
 
@@ -187,33 +187,5 @@ public class MazeFileHandler : MonoBehaviour
         Debug.LogError("File picker is only supported on UWP.");
         OnMazeExported?.Invoke(false);
 #endif
-    }
-
-    private void ApplyWallTextureAlgorithm(MazeData mazeData)
-    {
-        if (wallMaterials == null || wallMaterials.Length == 0) return;
-
-        Dictionary<Vector2Int, int> regionAssignments = new Dictionary<Vector2Int, int>();
-
-        for (int x = 0; x < mazeData.rows; x++)
-        {
-            for (int y = 0; y < mazeData.columns; y++)
-            {
-                int regionX = x / wallRegionSize;
-                int regionY = y / wallRegionSize;
-                Vector2Int regionKey = new Vector2Int(regionX, regionY);
-
-                if (!regionAssignments.TryGetValue(regionKey, out int matIndex))
-                {
-                    // Seeded random ensures consistent textures for specific regions
-                    UnityEngine.Random.InitState(regionX * 1000 + regionY);
-                    matIndex = UnityEngine.Random.Range(0, wallMaterials.Length);
-                    regionAssignments.Add(regionKey, matIndex);
-                }
-
-                mazeData.cells[x, y].MaterialIndex = matIndex;
-            }
-        }
-        Debug.LogError("Export: Wall texture indices calculated based on regions.");
     }
 }

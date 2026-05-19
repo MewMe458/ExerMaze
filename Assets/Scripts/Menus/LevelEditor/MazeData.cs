@@ -12,7 +12,7 @@ public class MazeData
     public List<SerializableCellData> cellsSerialized;
     public Vector2Int start;
     public Vector2Int end;
-    public List<ElementData> elements;
+    public List<ElementData> elements = new List<ElementData>();
 
     public void PrepareForSerialization()
     {
@@ -122,7 +122,8 @@ public class MazeData
     [Serializable]
     public class ElementData
     {
-        public string type;
-        public float detectionSize = 0f;
+        public Vector2Int position;
+        public string elementType;
+        public float detection = 0f;
     }
 }

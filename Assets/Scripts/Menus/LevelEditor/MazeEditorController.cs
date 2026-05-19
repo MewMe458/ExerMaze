@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using System.Linq;
 
 public class MazeEditorController : MonoBehaviour
 {
@@ -23,6 +24,54 @@ public class MazeEditorController : MonoBehaviour
     private MazeData currentMazeData;
     private bool isEditingStartPoint = false;
     private Color originalButtonColor;
+
+    public MazeData CurrentMaze {get; private set;}
+    public MazeEditorMode.MazeEditorMode_Enum CurrentMode {get; private set;}
+    public string SelectedElementType {get; private set;}
+
+    // Call these methods directly from your 6 new UI Buttons OnClick events
+    public void SelectDogNPC() => SelectElement("DogNPC");
+    public void SelectBone() => SelectElement("Bone");
+    public void SelectShield() => SelectElement("Shield");
+    public void SelectStar() => SelectElement("Star");
+    public void SelectSlowPotion() => SelectElement("SlowPotion");
+    public void SelectTeleporter() => SelectElement("Teleporter");
+
+    private void SelectElement(string elementType)
+    {
+        CurrentMode = MazeEditorMode.MazeEditorMode_Enum.SetElement;
+        SelectedElementType = elementType;
+        Debug.Log($"Selected Element: {elementType}");
+    }
+
+    public void TryPlaceElement(Vector2Int cellPosition)
+    {
+        if (CurrentMaze == null) return;
+
+        // Prevent placing elements over the start or end goals
+        if (cellPosition == CurrentMaze.start || cellPosition == CurrentMaze.end)
+        {
+            Debug.LogWarning("Cannot place elements on the Start or End goals.");
+            return;
+        }
+
+        // Remove any existing element at this position to avoid stacking
+        var existingElement = CurrentMaze.elements.FirstOrDefault(e => e.position == cellPosition);
+        if (existingElement != null)
+        {
+            CurrentMaze.elements.Remove(existingElement);
+            gridRenderer.RemoveElementVisual(cellPosition);
+        }
+
+        // Add the new element
+        var newElement = new MazeData.ElementData { 
+            position = cellPosition, 
+            elementType = SelectedElementType 
+        };
+        
+        CurrentMaze.elements.Add(newElement);
+        gridRenderer.DrawElement(newElement);
+    }
 
     void Start()
     {

@@ -231,7 +231,7 @@ public class LevelManager : MonoBehaviour
     {
         if (levelLoader != null && levelLoader.CurrentMazeData != null)
         {
-            return levelLoader.CurrentMazeData.elements.Exists(e => e.type == "Dog");
+            return levelLoader.CurrentMazeData.elements.Exists(e => e.elementType == "Dog");
         }
         return false;
     }

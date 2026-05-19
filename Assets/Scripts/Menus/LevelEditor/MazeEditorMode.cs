@@ -12,6 +12,8 @@ public class MazeEditorMode : MonoBehaviour
     private Button[,] cellButtons;
     private int rows, cols;
     private bool isEditingStartPoint = false;
+    private bool isEditingWallColor = false;
+    private Vector2Int selectedWallCell;
     private Dictionary<Vector2Int, Color> originalCornerColors;
     private MazeGenerator mazeGenerator;
 
@@ -183,5 +185,39 @@ public class MazeEditorMode : MonoBehaviour
             new Vector2Int(rows - 1, 0),
             new Vector2Int(rows - 1, cols - 1)
         };
+    }
+
+    public void EnterWallColorMode()
+    {
+        isEditingWallColor = true;
+    }
+
+    public void ExitWallColorMode()
+    {
+        isEditingWallColor = false;
+    }
+
+    public bool IsEditingWallColor()
+    {
+        return isEditingWallColor;
+    }
+
+    public void SetSelectedWallCell(int x, int y)
+    {
+        selectedWallCell = new Vector2Int(x, y);
+    }
+
+    public Vector2Int GetSelectedWallCell()
+    {
+        return selectedWallCell;
+    }
+
+    public enum MazeEditorMode_Enum
+    {
+        View,
+        EditWalls,
+        SetStart,
+        SetEnd,
+        SetElement // New mode added for placing standard elements
     }
 }

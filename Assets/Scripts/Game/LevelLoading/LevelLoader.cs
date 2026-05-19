@@ -286,25 +286,25 @@ public abstract class LevelLoader : MonoBehaviour
         List<Vector2Int> usedCells = new List<Vector2Int>();
         foreach (var element in mazeData.elements)
         {
-            Debug.Log($"Processing element: type={element.type}");
-            if (string.IsNullOrEmpty(element.type))
+            Debug.Log($"Processing element: type={element.elementType}");
+            if (string.IsNullOrEmpty(element.elementType))
             {
                 Debug.LogWarning("Element with null/empty type");
                 continue;
             }
 
-            GameObject prefab = elementPrefabMapping.GetPrefabForType(element.type);
-            Debug.Log($"Prefab for type '{element.type}': {(prefab != null ? prefab.name : "null")}");
+            GameObject prefab = elementPrefabMapping.GetPrefabForType(element.elementType);
+            Debug.Log($"Prefab for type '{element.elementType}': {(prefab != null ? prefab.name : "null")}");
 
             if (prefab == null)
             {
-                Debug.LogWarning($"No prefab for type: {element.type}");
+                Debug.LogWarning($"No prefab for type: {element.elementType}");
                 continue;
             }
 
             if (availableCells.Count == 0)
             {
-                Debug.LogWarning($"No available cells for {element.type}");
+                Debug.LogWarning($"No available cells for {element.elementType}");
                 break;
             }
 
@@ -312,7 +312,7 @@ public abstract class LevelLoader : MonoBehaviour
             int minItemDistance = baseMinItemDistance;
             while (minItemDistance >= 1 && selectedCell == null)
             {
-                bool isNPC = element.type.Contains("npc", StringComparison.OrdinalIgnoreCase);
+                bool isNPC = element.elementType.Contains("npc", StringComparison.OrdinalIgnoreCase);
                 int maxNPCStartDistance = 3;
                 List<Vector2Int> tempCells = new List<Vector2Int>(availableCells);
                 for (int attempt = 0; attempt < maxAttempts && tempCells.Count > 0; attempt++)
@@ -353,13 +353,13 @@ public abstract class LevelLoader : MonoBehaviour
                 if (selectedCell == null)
                 {
                     minItemDistance--;
-                    Debug.Log($"No cell found for {element.type} with minItemDistance={minItemDistance + 1}; trying {minItemDistance}");
+                    Debug.Log($"No cell found for {element.elementType} with minItemDistance={minItemDistance + 1}; trying {minItemDistance}");
                 }
             }
 
             if (selectedCell == null)
             {
-                Debug.LogWarning($"Failed to place {element.type}; skipping");
+                Debug.LogWarning($"Failed to place {element.elementType}; skipping");
                 continue;
             }
 
@@ -367,15 +367,15 @@ public abstract class LevelLoader : MonoBehaviour
             float posZ = (mazeData.rows - 1 - selectedCell.Value.x) * cellSize;
             Vector3 position = new Vector3(posX, prefab.transform.position.y, posZ);
             GameObject obj = Instantiate(prefab, position, prefab.transform.rotation, transform);
-            Debug.Log($"Spawned {element.type} at [{selectedCell.Value.x},{selectedCell.Value.y}]");
+            Debug.Log($"Spawned {element.elementType} at [{selectedCell.Value.x},{selectedCell.Value.y}]");
 
-            if (element.type == "Dog" && element.detectionSize > 0f)
+            if (element.elementType == "Dog" && element.detection > 0f)
             {
                 DogNPCChase dogChase = obj.GetComponent<DogNPCChase>();
                 if (dogChase != null)
                 {
-                    dogChase.DetectionSize = element.detectionSize / 2.0f * cellSize;
-                    Debug.Log($"Set detection range to {element.detectionSize} for Dog at {position}");
+                    dogChase.DetectionSize = element.detection / 2.0f * cellSize;
+                    Debug.Log($"Set detection range to {element.detection} for Dog at {position}");
                 }
                 else
                 {

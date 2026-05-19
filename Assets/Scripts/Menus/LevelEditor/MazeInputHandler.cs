@@ -16,38 +16,35 @@ public class MazeInputHandler : MonoBehaviour
     [SerializeField] private TMP_Dropdown wallDirectionDropdown;
     [SerializeField] private Button editButton;
     [SerializeField] private Button moveButton;
+    [SerializeField] private Button wallColorButton;
     [SerializeField] private Image editOverlay;
     [SerializeField] private Image moveOverlay;
     [SerializeField] private ScrollRect scrollRect;
     [SerializeField] private MazeGridRenderer gridRenderer; // Added for solution path hiding
+    [SerializeField] private MazeEditorController editorController;
 
     #region UI for setting elements
     [SerializeField] private Toggle relaxToggle; // Toggle for Relax mode
     [SerializeField] private Toggle challengeToggle; // Toggle for Challenge mode
     [SerializeField] private Button showElementPanelButton; // Button to show/hide element panel
     [SerializeField] private GameObject elementTogglesPanel; // Panel with toggles and inputs
-    [SerializeField] private GameObject editingElementPanel; // Blocking panel
-    [SerializeField] private Toggle dogToggle; // Dog NPC toggle
-    [SerializeField] private TMP_InputField dogCountInput; // Dog count input
-    [SerializeField] private TMP_Text dogRangeText; // Dog range text (Min-Max)
-    [SerializeField] private TMP_InputField dogDetectionSizeInput; // Dog detection range input
-    [SerializeField] private TMP_Text dogDetectionSizeRange; // Dog detection range text (Min-Max)
-    [SerializeField] private Toggle bonesToggle; // Bones toggle
-    [SerializeField] private TMP_InputField bonesCountInput; // Bones count input
-    [SerializeField] private TMP_Text bonesRangeText; // Bones range text
-    [SerializeField] private Toggle shieldToggle; // Shield toggle
-    [SerializeField] private TMP_InputField shieldCountInput; // Shield count input
-    [SerializeField] private TMP_Text shieldRangeText; // Shield range text
-    [SerializeField] private Toggle specialToggle; // Special item toggle
-    [SerializeField] private TMP_Text specialCountText; // Special item fixed count
+    [SerializeField] private Button dogButton;
+    [SerializeField] private Button boneButton;
+    [SerializeField] private Button shieldButton;
+    [SerializeField] private Button starButton;
+    [SerializeField] private Button slowButton;
+    [SerializeField] private Button teleportButton;
     private bool isElementPanelVisible = false; // Tracks element panel visibility
     #endregion
 
+    private Camera mainCamera;
     private MazeEditorMode editorMode;
     private MazeData mazeData;
     private Button[,] cellButtons;
     private int rows, cols;
     private bool isMoveMode = false;
+    private bool isWallColorMode = false;
+    private bool isSettingElements = false;
     private bool isDragging = false;
     private HashSet<Vector2Int> processedCells;
     private Vector2Int? lastProcessedCell;
@@ -99,6 +96,10 @@ public class MazeInputHandler : MonoBehaviour
         {
             editButton.onClick.AddListener(OnEditButtonClick);
         }
+        if (wallColorButton != null)
+        {
+            wallColorButton.onClick.AddListener(OnWallColorButtonClick);
+        }
 
         // Initialize mode toggles
         if (relaxToggle != null && challengeToggle != null)
@@ -124,65 +125,10 @@ public class MazeInputHandler : MonoBehaviour
             Debug.LogError("Show Element Panel Button not assigned.");
         }
 
-        // Initialize element toggles and inputs
-        if (dogToggle != null)
-        {
-            dogToggle.isOn = false;
-            dogToggle.onValueChanged.AddListener(OnDogToggleChanged);
-        }
-        if (bonesToggle != null)
-        {
-            bonesToggle.isOn = false;
-            bonesToggle.interactable = dogToggle.isOn;
-            bonesToggle.onValueChanged.AddListener(OnBonesToggleChanged);
-        }
-        if (shieldToggle != null)
-        {
-            shieldToggle.isOn = false;
-            shieldToggle.interactable = dogToggle.isOn;
-            shieldToggle.onValueChanged.AddListener(OnShieldToggleChanged);
-        }
-        if (specialToggle != null)
-        {
-            specialToggle.isOn = false;
-            specialToggle.onValueChanged.AddListener(OnSpecialToggleChanged);
-        }
-
-        // Add OnEndEdit listeners for input fields
-        if (dogCountInput != null)
-        {
-            dogCountInput.onEndEdit.AddListener((value) => ClampInputField(dogCountInput, "Dog"));
-            dogCountInput.gameObject.SetActive(false); // Hidden initially
-        }
-        if(dogDetectionSizeInput != null)
-        {
-            dogDetectionSizeInput.onEndEdit.AddListener((value) => ClampInputField(dogDetectionSizeInput, "DogDetectionSize"));
-            dogDetectionSizeInput.gameObject.SetActive(false); // Hidden initially
-        }
-        if (bonesCountInput != null)
-        {
-            bonesCountInput.onEndEdit.AddListener((value) => ClampInputField(bonesCountInput, "Bones"));
-            bonesCountInput.gameObject.SetActive(false); // Hidden initially
-        }
-        if (shieldCountInput != null)
-        {
-            shieldCountInput.onEndEdit.AddListener((value) => ClampInputField(shieldCountInput, "Shield"));
-            shieldCountInput.gameObject.SetActive(false); // Hidden initially
-        }
-
         // Initialize element panel and blocking panel
         if (elementTogglesPanel != null)
         {
             elementTogglesPanel.SetActive(false);
-        }
-        if (editingElementPanel != null)
-        {
-            editingElementPanel.SetActive(false);
-        }
-        if (specialCountText != null)
-        {
-            specialCountText.gameObject.SetActive(true);
-            specialCountText.text = "0";
         }
 
         UpdateButtonAppearances();
@@ -253,15 +199,15 @@ public class MazeInputHandler : MonoBehaviour
                             continue;
                         }
 
-                        bool addWall;
+                        bool addWall = true;
                         if (currentMouseButton == PointerEventData.InputButton.Left)
                         {
                             addWall = addToggle.isOn;
                         }
-                        else
-                        {
-                            addWall = !addToggle.isOn;
-                        }
+                        // else
+                        // {
+                        //     addWall = !addToggle.isOn;
+                        // }
 
                         WallDirection direction = (WallDirection)wallDirectionDropdown.value;
                         ToggleWall(x, y, direction, addWall);
@@ -271,6 +217,31 @@ public class MazeInputHandler : MonoBehaviour
                         OnWallToggled?.Invoke(x, y, direction);
                     }
                 }
+            }
+        }
+
+        // Detect left mouse click
+        if (Input.GetMouseButtonDown(0)) 
+        {
+            HandleClick();
+        }
+    }
+
+    private void HandleClick()
+    {
+        Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
+        if (Physics.Raycast(ray, out RaycastHit hit))
+        {
+            // Convert world hit point to grid position (assuming 1 unit = 1 cell)
+            Vector2Int cellPosition = new Vector2Int(
+                Mathf.RoundToInt(hit.point.x), 
+                Mathf.RoundToInt(hit.point.z)
+            );
+
+            // Trigger element placement if in the correct mode
+            if (editorController.CurrentMode == MazeEditorMode.MazeEditorMode_Enum.SetElement)
+            {
+                editorController.TryPlaceElement(cellPosition);
             }
         }
     }
@@ -305,6 +276,23 @@ public class MazeInputHandler : MonoBehaviour
                 editorMode.HandleStartPointSelection(x, y);
                 gridRenderer.HideSolution(); // Hide solution when setting start/end
             }
+            return;
+        }
+
+        if (editorMode != null && editorMode.IsEditingWallColor())
+        {
+            if (pointerData.button == PointerEventData.InputButton.Left)
+            {
+                editorMode.SetSelectedWallCell(x, y);
+
+                WallColorPopup popup = FindObjectOfType<WallColorPopup>();
+
+                if (popup != null)
+                {
+                    popup.Open(x, y);
+                }
+            }
+
             return;
         }
 
@@ -345,6 +333,9 @@ public class MazeInputHandler : MonoBehaviour
     private void OnMoveButtonClick()
     {
         isMoveMode = true;
+        isWallColorMode = false;
+        if (editorMode != null) editorMode.ExitWallColorMode();
+
         UpdateButtonAppearances();
         ApplyCurrentMode();
         OnMoveModeChanged?.Invoke(isMoveMode);
@@ -353,41 +344,47 @@ public class MazeInputHandler : MonoBehaviour
     private void OnEditButtonClick()
     {
         isMoveMode = false;
+        isWallColorMode = false;
+        if (editorMode != null) editorMode.ExitWallColorMode();
+
         UpdateButtonAppearances();
         ApplyCurrentMode();
         OnMoveModeChanged?.Invoke(isMoveMode);
     }
 
-    private void UpdateButtonAppearances()
+    private void OnWallColorButtonClick()
     {
-        if (moveButton != null)
-        {
-            Image moveImage = moveButton.GetComponent<Image>();
-            if (moveImage != null)
-            {
-                moveImage.color = isMoveMode ? Color.green : Color.white;
-            }
-            TMP_Text moveText = moveButton.GetComponentInChildren<TMP_Text>();
-            if (moveText != null)
-            {
-                moveText.text = "Move";
-            }
-        }
+        isMoveMode = false;
+        isWallColorMode = true;
+        if (editorMode != null) editorMode.EnterWallColorMode();
 
-        if (editButton != null)
-        {
-            Image editImage = editButton.GetComponent<Image>();
-            if (editImage != null)
-            {
-                editImage.color = !isMoveMode ? Color.green : Color.white;
-            }
-            TMP_Text editText = editButton.GetComponentInChildren<TMP_Text>();
-            if (editText != null)
-            {
-                editText.text = "Edit";
-            }
-        }
+        UpdateButtonAppearances();
+        ApplyCurrentMode();
+        OnMoveModeChanged?.Invoke(isMoveMode); 
     }
+
+private void UpdateButtonAppearances()
+{
+    if (moveButton != null)
+    {
+        Image moveImage = moveButton.GetComponent<Image>();
+        if (moveImage != null) moveImage.color = isMoveMode ? Color.green : Color.white;
+    }
+
+    if (editButton != null)
+    {
+        Image editImage = editButton.GetComponent<Image>();
+        // Update this line to check both booleans!
+        if (editImage != null) editImage.color = (!isMoveMode && !isWallColorMode) ? Color.green : Color.white; 
+    }
+
+    // Add this block for the Wall Color Button
+    if (wallColorButton != null)
+    {
+        Image colorImage = wallColorButton.GetComponent<Image>();
+        if (colorImage != null) colorImage.color = isWallColorMode ? Color.green : Color.white;
+    }
+}
 
     private void ApplyCurrentMode()
     {
@@ -397,7 +394,8 @@ public class MazeInputHandler : MonoBehaviour
         }
         if (editOverlay != null)
         {
-            editOverlay.gameObject.SetActive(isMoveMode);
+            // Fix: Now it only shows the Edit overlay when modifying walls
+            editOverlay.gameObject.SetActive(!isMoveMode && !isWallColorMode); 
         }
         if (scrollRect != null)
         {
@@ -495,7 +493,6 @@ public class MazeInputHandler : MonoBehaviour
         challengeToggle.isOn = false; // Ensure mutual exclusivity
         showElementPanelButton.gameObject.SetActive(false);
         elementTogglesPanel.SetActive(false);
-        editingElementPanel.SetActive(false);
         isElementPanelVisible = false;
     }
 
@@ -505,56 +502,12 @@ public class MazeInputHandler : MonoBehaviour
         relaxToggle.isOn = false; // Ensure mutual exclusivity
         showElementPanelButton.gameObject.SetActive(true);
         elementTogglesPanel.SetActive(isElementPanelVisible);
-        editingElementPanel.SetActive(isElementPanelVisible);
     }
 
     private void OnShowElementPanelButton()
     {
-        // Clamp input fields before toggling panel visibility
-        if (dogToggle.isOn)
-            ClampInputField(dogCountInput, "Dog");
-        if (bonesToggle.isOn)
-            ClampInputField(bonesCountInput, "Bones");
-        if (shieldToggle.isOn)
-            ClampInputField(shieldCountInput, "Shield");
-
         isElementPanelVisible = !isElementPanelVisible;
         elementTogglesPanel.SetActive(isElementPanelVisible);
-        editingElementPanel.SetActive(isElementPanelVisible);
-    }
-
-    private void OnDogToggleChanged(bool isOn)
-    {
-        bonesToggle.interactable = isOn;
-        shieldToggle.interactable = isOn;
-        if (!isOn)
-        {
-            bonesToggle.isOn = false; // Uncheck Bones toggle
-            shieldToggle.isOn = false; // Uncheck Shield toggle
-        }
-        dogCountInput.gameObject.SetActive(isOn);
-        dogDetectionSizeInput.gameObject.SetActive(isOn);
-        dogDetectionSizeRange.gameObject.SetActive(isOn);
-        bonesCountInput.gameObject.SetActive(isOn && bonesToggle.isOn);
-        shieldCountInput.gameObject.SetActive(isOn && shieldToggle.isOn);
-        UpdateElementRanges();
-    }
-
-    private void OnBonesToggleChanged(bool isOn)
-    {
-        bonesCountInput.gameObject.SetActive(isOn);
-        UpdateElementRanges();
-    }
-
-    private void OnShieldToggleChanged(bool isOn)
-    {
-        shieldCountInput.gameObject.SetActive(isOn);
-        UpdateElementRanges();
-    }
-
-    private void OnSpecialToggleChanged(bool isOn)
-    {
-        UpdateElementRanges();
     }
 
     private (int dogAndShieldMin, int dogAndShieldMax, int bonesMin, int bonesMax, int specialCount) CalculateElementRanges()
@@ -618,27 +571,6 @@ public class MazeInputHandler : MonoBehaviour
         int bonesMin = ranges.bonesMin;
         int bonesMax = ranges.bonesMax;
         int specialCount = ranges.specialCount;
-
-        if (dogRangeText != null)
-            dogRangeText.text = $"({dogAndShieldMin}-{dogAndShieldMax})";
-        if (dogDetectionSizeRange != null)
-            dogDetectionSizeRange.text = $"(1-{(mazeData != null ? mazeData.rows : 0)})";
-        if (bonesRangeText != null)
-            bonesRangeText.text = $"({bonesMin}-{bonesMax})";
-        if (shieldRangeText != null)
-            shieldRangeText.text = $"({dogAndShieldMin}-{dogAndShieldMax})";
-        if (specialCountText != null)
-            specialCountText.text = mazeData != null ? specialCount.ToString() : "0";
-
-        // Clamp input values
-        if (dogCountInput != null && int.TryParse(dogCountInput.text, out int dogCount))
-            dogCountInput.text = Mathf.Clamp(dogCount, dogAndShieldMin, dogAndShieldMax).ToString();
-        if (dogDetectionSizeInput != null && int.TryParse(dogDetectionSizeInput.text, out int dogRange)) 
-            dogDetectionSizeInput.text = Mathf.Clamp(dogRange, 1, mazeData.rows).ToString();
-        if (bonesCountInput != null && int.TryParse(bonesCountInput.text, out int bonesCount))
-            bonesCountInput.text = Mathf.Clamp(bonesCount, bonesMin, bonesMax).ToString();
-        if (shieldCountInput != null && int.TryParse(shieldCountInput.text, out int shieldCount))
-            shieldCountInput.text = Mathf.Clamp(shieldCount, dogAndShieldMin, dogAndShieldMax).ToString();
     }
 
     public void UpdateTogglesFromMazeData()
@@ -646,11 +578,6 @@ public class MazeInputHandler : MonoBehaviour
         if (mazeData == null)
         {
             Debug.LogWarning("Cannot update toggles: MazeData is null.");
-            // Hide input fields when no maze is loaded
-            if (dogCountInput != null) dogCountInput.gameObject.SetActive(false);
-            if (bonesCountInput != null) bonesCountInput.gameObject.SetActive(false);
-            if (shieldCountInput != null) shieldCountInput.gameObject.SetActive(false);
-            if (specialCountText != null) specialCountText.text = "0";
             return;
         }
 
@@ -666,33 +593,8 @@ public class MazeInputHandler : MonoBehaviour
 
         // Count elements
         var elementCounts = mazeData.elements
-            ?.GroupBy(e => e.type)
+            ?.GroupBy(e => e.elementType)
             ?.ToDictionary(g => g.Key, g => g.Count()) ?? new Dictionary<string, int>();
-
-        // Update element toggles and inputs
-        dogToggle.isOn = elementCounts.ContainsKey("Dog") && elementCounts["Dog"] > 0;
-        bonesToggle.isOn = dogToggle.isOn && elementCounts.ContainsKey("Bones") && elementCounts["Bones"] > 0;
-        shieldToggle.isOn = dogToggle.isOn && elementCounts.ContainsKey("Shield") && elementCounts["Shield"] > 0;
-        specialToggle.isOn = elementCounts.ContainsKey("Special") && elementCounts["Special"] > 0;
-
-        dogCountInput.text = dogToggle.isOn ? elementCounts.GetValueOrDefault("Dog", 0).ToString() : "0";
-        dogDetectionSizeInput.text = mazeData != null ? Mathf.FloorToInt(mazeData.rows / 2).ToString() : "1";
-        bonesCountInput.text = bonesToggle.isOn ? elementCounts.GetValueOrDefault("Bones", 0).ToString() : "0";
-        shieldCountInput.text = shieldToggle.isOn ? elementCounts.GetValueOrDefault("Shield", 0).ToString() : "0";
-
-        // Update interactability and visibility
-        bonesToggle.interactable = dogToggle.isOn;
-        shieldToggle.interactable = dogToggle.isOn;
-        //if (!dogToggle.isOn)
-        //{
-        //    bonesToggle.isOn = false;
-        //    shieldToggle.isOn = false;
-        //}
-        dogCountInput.gameObject.SetActive(dogToggle.isOn);
-        bonesCountInput.gameObject.SetActive(dogToggle.isOn && bonesToggle.isOn);
-        shieldCountInput.gameObject.SetActive(dogToggle.isOn && shieldToggle.isOn);
-        if (specialCountText != null)
-            specialCountText.gameObject.SetActive(true);
 
         UpdateElementRanges();
     }
@@ -716,37 +618,6 @@ public class MazeInputHandler : MonoBehaviour
             int bonesMin = ranges.bonesMin;
             int bonesMax = ranges.bonesMax;
             int specialCount = ranges.specialCount;
-
-            if (dogToggle.isOn && int.TryParse(dogCountInput.text, out int dogCount))
-            {
-                dogCount = Mathf.Clamp(dogCount, dogAndShieldMin, dogAndShieldMax);
-                int dogDetectionSize = int.TryParse(dogDetectionSizeInput.text, out int range) ? 
-                    Mathf.Clamp(range, 1, mazeData.rows) : mazeData.rows;
-                Debug.Log($"Setting dogDetectionSize: {dogDetectionSize} for {dogCount} Dogs");
-                for (int i = 0; i < dogCount; i++)
-                    mazeData.elements.Add(new MazeData.ElementData { type = "Dog", detectionSize = (float)dogDetectionSize });
-                Debug.Log($"Elements after adding Dogs: {string.Join(", ", mazeData.elements.Select(e => $"type={e.type}, detectionSize={e.detectionSize}"))}");
-            }
-
-            if (bonesToggle.isOn && int.TryParse(bonesCountInput.text, out int bonesCount))
-            {
-                bonesCount = Mathf.Clamp(bonesCount, bonesMin, bonesMax);
-                for (int i = 0; i < bonesCount; i++)
-                    mazeData.elements.Add(new MazeData.ElementData { type = "Bones", detectionSize = 0f });
-            }
-
-            if (shieldToggle.isOn && int.TryParse(shieldCountInput.text, out int shieldCount))
-            {
-                shieldCount = Mathf.Clamp(shieldCount, dogAndShieldMin, dogAndShieldMax);
-                for (int i = 0; i < shieldCount; i++)
-                    mazeData.elements.Add(new MazeData.ElementData { type = "Shield", detectionSize = 0f });
-            }
-
-            if (specialToggle.isOn)
-            {
-                for (int i = 0; i < specialCount; i++)
-                    mazeData.elements.Add(new MazeData.ElementData { type = "Special", detectionSize = 0f });
-            }
         }
     }
 }
