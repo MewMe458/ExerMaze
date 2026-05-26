@@ -25,6 +25,14 @@ public class MazeGridRenderer : MonoBehaviour
     public GameObject slowPotionPrefab;
     public GameObject teleporterPrefab;
 
+    [Header("Element Icons")]
+    [SerializeField] private Sprite dogIcon;
+    [SerializeField] private Sprite boneIcon;
+    [SerializeField] private Sprite shieldIcon;
+    [SerializeField] private Sprite starIcon;
+    [SerializeField] private Sprite slowPotionIcon;
+    [SerializeField] private Sprite teleporterIcon;
+
     // Keeps track of spawned elements so they can be removed if overridden
     private Dictionary<Vector2Int, GameObject> spawnedElements = new Dictionary<Vector2Int, GameObject>();
 
@@ -445,19 +453,58 @@ public class MazeGridRenderer : MonoBehaviour
     // This method handles drawing the specific element
     public void DrawElement(MazeData.ElementData element)
     {
-        GameObject prefabToSpawn = GetPrefabForElementType(element.elementType);
-        if (prefabToSpawn == null) 
+        RemoveElementVisual(element.position);
+
+        Button cellButton =
+            cellButtons[element.position.x, element.position.y];
+
+        GameObject iconObj = new GameObject(
+            element.elementType);
+
+        iconObj.transform.SetParent(cellButton.transform, false);
+
+        RectTransform rect =
+            iconObj.AddComponent<RectTransform>();
+
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+        rect.localScale = Vector3.one;
+
+        Image img = iconObj.AddComponent<Image>();
+
+        img.sprite = GetIconForElementType(element.elementType);
+
+        img.raycastTarget = false;
+
+        spawnedElements[element.position] = iconObj;
+    }
+
+    private Sprite GetIconForElementType(string type)
+    {
+        switch (type)
         {
-            Debug.LogError($"Prefab for {element.elementType} is missing!");
-            return;
+            case "DogNPC":
+                return dogIcon;
+
+            case "Bone":
+                return boneIcon;
+
+            case "Shield":
+                return shieldIcon;
+
+            case "Star":
+                return starIcon;
+
+            case "SlowPotion":
+                return slowPotionIcon;
+
+            case "Teleporter":
+                return teleporterIcon;
         }
 
-        // Calculate world position based on your grid constraints
-        // (Assuming standard 1x1 grid size, adjust if your cells are scaled differently)
-        Vector3 spawnPos = new Vector3(element.position.x, 0, element.position.y); 
-        
-        GameObject newElement = Instantiate(prefabToSpawn, spawnPos, Quaternion.identity, transform);
-        spawnedElements[element.position] = newElement;
+        return null;
     }
 
     public void RemoveElementVisual(Vector2Int position)

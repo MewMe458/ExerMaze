@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System.Linq;
+using System.Collections.Generic;
 
 public class MazeEditorController : MonoBehaviour
 {
@@ -21,56 +22,126 @@ public class MazeEditorController : MonoBehaviour
     [SerializeField] private MazeGridRenderer gridRenderer;
     [SerializeField] private MazeEditorMode editorMode;
 
+    [Header("Challenge Element Buttons")]
+    [SerializeField] private Button dogButton;
+    [SerializeField] private Button boneButton;
+    [SerializeField] private Button shieldButton;
+    [SerializeField] private Button starButton;
+    [SerializeField] private Button slowButton;
+    [SerializeField] private Button teleportButton;
+
+    private Dictionary<Button, string> elementButtonMap;
+    private Button currentSelectedButton;
+
     private MazeData currentMazeData;
     private bool isEditingStartPoint = false;
     private Color originalButtonColor;
 
-    public MazeData CurrentMaze {get; private set;}
+    public MazeData CurrentMaze => currentMazeData;
     public MazeEditorMode.MazeEditorMode_Enum CurrentMode {get; private set;}
     public string SelectedElementType {get; private set;}
+    public bool IsChallengeMode => CurrentMaze != null && CurrentMaze.mode == "Challenge";
 
     // Call these methods directly from your 6 new UI Buttons OnClick events
-    public void SelectDogNPC() => SelectElement("DogNPC");
-    public void SelectBone() => SelectElement("Bone");
-    public void SelectShield() => SelectElement("Shield");
-    public void SelectStar() => SelectElement("Star");
-    public void SelectSlowPotion() => SelectElement("SlowPotion");
-    public void SelectTeleporter() => SelectElement("Teleporter");
+    public void SelectDogNPC() => SelectElement(dogButton, "DogNPC");
+    public void SelectBone() => SelectElement(boneButton, "Bone");
+    public void SelectShield() => SelectElement(shieldButton, "Shield");
+    public void SelectStar() => SelectElement(starButton, "Star");
+    public void SelectSlowPotion() => SelectElement(slowButton, "SlowPotion");
+    public void SelectTeleporter() => SelectElement(teleportButton, "Teleporter");
 
-    private void SelectElement(string elementType)
+    // Bind this to each of the 6 UI Buttons' OnClick() event in the Inspector.
+    // Pass the index (0 through 5) corresponding to the button.
+
+    private void SelectElement(Button clickedButton, string elementType)
     {
+        if (IsChallengeMode == false)
+        {
+            Debug.Log("Cannot place elements in Relax mode.");
+            return;
+        }
+
+        ResetElementButtonVisuals();
+
+        currentSelectedButton = clickedButton;
+
+        Image img = clickedButton.GetComponent<Image>();
+        if (img != null)
+            img.color = Color.green;
+
         CurrentMode = MazeEditorMode.MazeEditorMode_Enum.SetElement;
         SelectedElementType = elementType;
+
         Debug.Log($"Selected Element: {elementType}");
+    }
+
+    public void DisableElementPlacement()
+    {
+        CurrentMode = MazeEditorMode.MazeEditorMode_Enum.EditWalls;
+        SelectedElementType = string.Empty;
+
+        ResetElementButtonVisuals();
+    }
+
+    private void ResetElementButtonVisuals()
+    {
+        Button[] buttons =
+        {
+            dogButton,
+            boneButton,
+            shieldButton,
+            starButton,
+            slowButton,
+            teleportButton
+        };
+
+        foreach (Button btn in buttons)
+        {
+            if (btn == null) continue;
+
+            Image img = btn.GetComponent<Image>();
+
+            if (img != null)
+                img.color = Color.white;
+        }
     }
 
     public void TryPlaceElement(Vector2Int cellPosition)
     {
-        if (CurrentMaze == null) return;
+        if (CurrentMaze == null)
+            return;
 
-        // Prevent placing elements over the start or end goals
-        if (cellPosition == CurrentMaze.start || cellPosition == CurrentMaze.end)
+        if (!IsChallengeMode)
+            return;
+
+        if (string.IsNullOrEmpty(SelectedElementType))
+            return;
+
+        if (cellPosition == CurrentMaze.start ||
+            cellPosition == CurrentMaze.end)
         {
-            Debug.LogWarning("Cannot place elements on the Start or End goals.");
+            Debug.LogWarning("Cannot place on Start/Goal.");
             return;
         }
 
-        // Remove any existing element at this position to avoid stacking
-        var existingElement = CurrentMaze.elements.FirstOrDefault(e => e.position == cellPosition);
-        if (existingElement != null)
+        var existing = CurrentMaze.elements
+            .FirstOrDefault(e => e.position == cellPosition);
+
+        if (existing != null)
         {
-            CurrentMaze.elements.Remove(existingElement);
+            CurrentMaze.elements.Remove(existing);
             gridRenderer.RemoveElementVisual(cellPosition);
         }
 
-        // Add the new element
-        var newElement = new MazeData.ElementData { 
-            position = cellPosition, 
-            elementType = SelectedElementType 
+        MazeData.ElementData element = new MazeData.ElementData
+        {
+            position = cellPosition,
+            elementType = SelectedElementType
         };
-        
-        CurrentMaze.elements.Add(newElement);
-        gridRenderer.DrawElement(newElement);
+
+        CurrentMaze.elements.Add(element);
+
+        gridRenderer.DrawElement(element);
     }
 
     void Start()
@@ -115,6 +186,8 @@ public class MazeEditorController : MonoBehaviour
             }
         }
 
+        ResetElementButtonVisuals();
+
         // Subscribe to file handler events
         fileHandler.OnMazeLoaded += OnMazeLoaded;
         fileHandler.OnMazeExported += OnMazeExported;
@@ -136,6 +209,7 @@ public class MazeEditorController : MonoBehaviour
         int size = Mathf.RoundToInt(sizeSlider.value);
         currentMazeData = mazeGenerator.GenerateEmpty(size, size);
         gridRenderer.InitializeGrid(currentMazeData);
+        inputHandler.Initialize(currentMazeData, gridRenderer.GetCellButtons());
         isEditingStartPoint = false;
         UpdateButtonColor();
         editorMode.ExitEditStartPointMode();
@@ -147,6 +221,7 @@ public class MazeEditorController : MonoBehaviour
         int size = Mathf.RoundToInt(sizeSlider.value);
         currentMazeData = mazeGenerator.GenerateRandom(size, size);
         gridRenderer.InitializeGrid(currentMazeData);
+        inputHandler.Initialize(currentMazeData, gridRenderer.GetCellButtons());
         isEditingStartPoint = false;
         UpdateButtonColor();
         editorMode.ExitEditStartPointMode();

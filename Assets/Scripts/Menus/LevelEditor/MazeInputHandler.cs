@@ -26,7 +26,6 @@ public class MazeInputHandler : MonoBehaviour
     #region UI for setting elements
     [SerializeField] private Toggle relaxToggle; // Toggle for Relax mode
     [SerializeField] private Toggle challengeToggle; // Toggle for Challenge mode
-    [SerializeField] private Button showElementPanelButton; // Button to show/hide element panel
     [SerializeField] private GameObject elementTogglesPanel; // Panel with toggles and inputs
     [SerializeField] private Button dogButton;
     [SerializeField] private Button boneButton;
@@ -34,7 +33,18 @@ public class MazeInputHandler : MonoBehaviour
     [SerializeField] private Button starButton;
     [SerializeField] private Button slowButton;
     [SerializeField] private Button teleportButton;
-    private bool isElementPanelVisible = false; // Tracks element panel visibility
+    #endregion
+
+    #region Prefabs for NPCs and Items
+    [SerializeField] private GameObject dogPrefab;
+    [SerializeField] private GameObject bonePrefab;
+    [SerializeField] private GameObject shieldPrefab;
+    [SerializeField] private GameObject starPrefab;
+    [SerializeField] private GameObject slowPrefab;
+    [SerializeField] private GameObject teleportPrefab;
+    #endregion
+
+    #region Icons for NPCs and Items
     #endregion
 
     private Camera mainCamera;
@@ -44,7 +54,13 @@ public class MazeInputHandler : MonoBehaviour
     private int rows, cols;
     private bool isMoveMode = false;
     private bool isWallColorMode = false;
-    private bool isSettingElements = false;
+    private bool isSetElementsMode = false;
+    private bool isPlaceDogMode = false;
+    private bool isPlaceBoneMode = false;
+    private bool isPlaceShieldMode = false;
+    private bool isPlaceStarMode = false;
+    private bool isPlaceSlowPotionMode = false;
+    private bool isPlaceTeleporterMode = false;
     private bool isDragging = false;
     private HashSet<Vector2Int> processedCells;
     private Vector2Int? lastProcessedCell;
@@ -112,17 +128,6 @@ public class MazeInputHandler : MonoBehaviour
         else
         {
             Debug.LogError("Relax or Challenge toggle not assigned.");
-        }
-
-        // Initialize show element panel button
-        if (showElementPanelButton != null)
-        {
-            showElementPanelButton.onClick.AddListener(OnShowElementPanelButton);
-            showElementPanelButton.gameObject.SetActive(false); // Hidden by default
-        }
-        else
-        {
-            Debug.LogError("Show Element Panel Button not assigned.");
         }
 
         // Initialize element panel and blocking panel
@@ -219,35 +224,11 @@ public class MazeInputHandler : MonoBehaviour
                 }
             }
         }
-
-        // Detect left mouse click
-        if (Input.GetMouseButtonDown(0)) 
-        {
-            HandleClick();
-        }
-    }
-
-    private void HandleClick()
-    {
-        Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
-        if (Physics.Raycast(ray, out RaycastHit hit))
-        {
-            // Convert world hit point to grid position (assuming 1 unit = 1 cell)
-            Vector2Int cellPosition = new Vector2Int(
-                Mathf.RoundToInt(hit.point.x), 
-                Mathf.RoundToInt(hit.point.z)
-            );
-
-            // Trigger element placement if in the correct mode
-            if (editorController.CurrentMode == MazeEditorMode.MazeEditorMode_Enum.SetElement)
-            {
-                editorController.TryPlaceElement(cellPosition);
-            }
-        }
     }
 
     public void OnPointerDown(int x, int y, BaseEventData eventData)
     {
+
         if (mazeData == null || mazeData.cells == null || wallDirectionDropdown == null || addToggle == null)
         {
             Debug.LogWarning($"OnPointerDown failed: mazeData is {(mazeData == null ? "null" : "not null")}, mazeData.cells is {(mazeData?.cells == null ? "null" : "not null")}, wallDirectionDropdown is {(wallDirectionDropdown == null ? "null" : "not null")}, addToggle is {(addToggle == null ? "null" : "not null")}");
@@ -261,6 +242,18 @@ public class MazeInputHandler : MonoBehaviour
         }
 
         var pointerData = eventData as PointerEventData;
+
+        if (editorController != null &&
+            editorController.CurrentMode == MazeEditorMode.MazeEditorMode_Enum.SetElement)
+        {
+            if (pointerData.button == PointerEventData.InputButton.Left)
+            {
+                editorController.TryPlaceElement(new Vector2Int(x, y));
+            }
+
+            return;
+        }
+        
         if (pointerData == null)
         {
             Debug.LogWarning("OnPointerDown: PointerEventData is null.");
@@ -363,39 +356,34 @@ public class MazeInputHandler : MonoBehaviour
         OnMoveModeChanged?.Invoke(isMoveMode); 
     }
 
-private void UpdateButtonAppearances()
-{
-    if (moveButton != null)
+    private void UpdateButtonAppearances()
     {
-        Image moveImage = moveButton.GetComponent<Image>();
-        if (moveImage != null) moveImage.color = isMoveMode ? Color.green : Color.white;
-    }
+        if (moveButton != null)
+        {
+            Image moveImage = moveButton.GetComponent<Image>();
+            if (moveImage != null) moveImage.color = isMoveMode ? Color.green : Color.white;
+        }
 
-    if (editButton != null)
-    {
-        Image editImage = editButton.GetComponent<Image>();
-        // Update this line to check both booleans!
-        if (editImage != null) editImage.color = (!isMoveMode && !isWallColorMode) ? Color.green : Color.white; 
-    }
+        if (editButton != null)
+        {
+            Image editImage = editButton.GetComponent<Image>();
+            // Update this line to check both booleans!
+            if (editImage != null) editImage.color = (!isMoveMode && !isWallColorMode) ? Color.green : Color.white; 
+        }
 
-    // Add this block for the Wall Color Button
-    if (wallColorButton != null)
-    {
-        Image colorImage = wallColorButton.GetComponent<Image>();
-        if (colorImage != null) colorImage.color = isWallColorMode ? Color.green : Color.white;
+        // Add this block for the Wall Color Button
+        if (wallColorButton != null)
+        {
+            Image colorImage = wallColorButton.GetComponent<Image>();
+            if (colorImage != null) colorImage.color = isWallColorMode ? Color.green : Color.white;
+        }
     }
-}
 
     private void ApplyCurrentMode()
     {
         if (moveOverlay != null)
         {
             moveOverlay.gameObject.SetActive(isMoveMode);
-        }
-        if (editOverlay != null)
-        {
-            // Fix: Now it only shows the Edit overlay when modifying walls
-            editOverlay.gameObject.SetActive(!isMoveMode && !isWallColorMode); 
         }
         if (scrollRect != null)
         {
@@ -489,25 +477,39 @@ private void UpdateButtonAppearances()
 
     private void OnRelaxToggleChanged(bool isOn)
     {
-        if (!isOn) return;
-        challengeToggle.isOn = false; // Ensure mutual exclusivity
-        showElementPanelButton.gameObject.SetActive(false);
+        if (!isOn)
+            return;
+
+        challengeToggle.isOn = false;
+
+        if (mazeData != null)
+            mazeData.mode = "Relax";
+
         elementTogglesPanel.SetActive(false);
-        isElementPanelVisible = false;
+
+        if (editorController != null)
+        {
+            editorController.DisableElementPlacement();
+        }
+
+        isSetElementsMode = false;
+
+        Debug.LogError("Relax Mode Enabled");
     }
 
     private void OnChallengeToggleChanged(bool isOn)
     {
-        if (!isOn) return;
-        relaxToggle.isOn = false; // Ensure mutual exclusivity
-        showElementPanelButton.gameObject.SetActive(true);
-        elementTogglesPanel.SetActive(isElementPanelVisible);
-    }
+        if (!isOn)
+            return;
 
-    private void OnShowElementPanelButton()
-    {
-        isElementPanelVisible = !isElementPanelVisible;
-        elementTogglesPanel.SetActive(isElementPanelVisible);
+        relaxToggle.isOn = false;
+
+        if (mazeData != null)
+            mazeData.mode = "Challenge";
+
+        elementTogglesPanel.SetActive(true);
+
+        Debug.LogError("Challenge Mode Enabled");
     }
 
     private (int dogAndShieldMin, int dogAndShieldMax, int bonesMin, int bonesMax, int specialCount) CalculateElementRanges()
