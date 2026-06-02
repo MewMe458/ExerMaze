@@ -507,6 +507,30 @@ public class MazeGridRenderer : MonoBehaviour
         return null;
     }
 
+    public void DestroyElementAt(int x, int y)
+    {
+        // Search through your active instantiated element prefabs container.
+        // If you are storing them inside a list or dictionary, find it by position:
+        
+        // Example assuming your element prefabs are children of a specific container or spawned cells:
+        string expectedName = $"Element_{x}_{y}"; 
+        
+        // Look through spawned children to clean up the hierarchy
+        foreach (Transform child in transform) 
+        {
+            // Adjust this naming condition based on how your script names spawned prefabs
+            if (child.name.Contains($"({x}, {y})") || child.name == expectedName)
+            {
+                Destroy(child.gameObject);
+                break;
+            }
+        }
+        
+        // Alternately, if your script completely clears and recreates the grid on changes, 
+        // you can simply call your existing regeneration/render method:
+        // UpdateGrid(currentMazeData); 
+    }
+
     public void RemoveElementVisual(Vector2Int position)
     {
         if (spawnedElements.TryGetValue(position, out GameObject elementObj))

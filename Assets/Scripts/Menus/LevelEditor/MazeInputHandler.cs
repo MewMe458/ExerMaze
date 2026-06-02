@@ -61,6 +61,7 @@ public class MazeInputHandler : MonoBehaviour
     private bool isPlaceStarMode = false;
     private bool isPlaceSlowPotionMode = false;
     private bool isPlaceTeleporterMode = false;
+    private bool isDeleteElementMode = false;
     private bool isDragging = false;
     private HashSet<Vector2Int> processedCells;
     private Vector2Int? lastProcessedCell;
@@ -231,7 +232,7 @@ public class MazeInputHandler : MonoBehaviour
 
         if (mazeData == null || mazeData.cells == null || wallDirectionDropdown == null || addToggle == null)
         {
-            Debug.LogWarning($"OnPointerDown failed: mazeData is {(mazeData == null ? "null" : "not null")}, mazeData.cells is {(mazeData?.cells == null ? "null" : "not null")}, wallDirectionDropdown is {(wallDirectionDropdown == null ? "null" : "not null")}, addToggle is {(addToggle == null ? "null" : "not null")}");
+            Debug.LogError($"OnPointerDown failed: mazeData is {(mazeData == null ? "null" : "not null")}, mazeData.cells is {(mazeData?.cells == null ? "null" : "not null")}, wallDirectionDropdown is {(wallDirectionDropdown == null ? "null" : "not null")}, addToggle is {(addToggle == null ? "null" : "not null")}");
             return;
         }
 
@@ -260,32 +261,31 @@ public class MazeInputHandler : MonoBehaviour
             return;
         }
 
+        if (editorMode != null && editorMode.IsEditingWallColor())
+        {
+            // 🔥 If the user hasn't selected a valid color from the palette, reopen it
+            if (editorMode.GetGlobalMaterialIndex() < 0)
+            {
+                WallColorPopup popup = FindObjectOfType<WallColorPopup>();
+                if (popup != null) popup.Open();
+                return;
+            }
+
+            // Apply chosen color to cell instantly
+            editorMode.ApplyColorToCell(x, y);
+            if (gridRenderer != null) gridRenderer.HideSolution();
+            return;
+        }
+
         if (isMoveMode) return;
 
         if (editorMode != null && editorMode.IsEditingStartPoint())
         {
             if (pointerData.button == PointerEventData.InputButton.Left)
             {
-                editorMode.HandleStartPointSelection(x, y);
+                // editorMode.HandleStartPointSelection(x, y);
                 gridRenderer.HideSolution(); // Hide solution when setting start/end
             }
-            return;
-        }
-
-        if (editorMode != null && editorMode.IsEditingWallColor())
-        {
-            if (pointerData.button == PointerEventData.InputButton.Left)
-            {
-                editorMode.SetSelectedWallCell(x, y);
-
-                WallColorPopup popup = FindObjectOfType<WallColorPopup>();
-
-                if (popup != null)
-                {
-                    popup.Open(x, y);
-                }
-            }
-
             return;
         }
 
@@ -313,6 +313,28 @@ public class MazeInputHandler : MonoBehaviour
 
             OnWallToggled?.Invoke(x, y, direction);
         }
+
+        if (isDeleteElementMode)
+        {
+            // Find if there is an element at this (x, y) coordinate
+            MazeData.ElementData elementToRemove = mazeData.elements.Find(e => e.position.x == x && e.position.y == y);
+            
+            if (elementToRemove != null)
+            {
+                // Remove data entry
+                mazeData.elements.Remove(elementToRemove);
+                
+                // Tell the renderer to destroy the physical prefab instance
+                if (gridRenderer != null)
+                {
+                    gridRenderer.DestroyElementAt(x, y);
+                    gridRenderer.HideSolution(); // Recalculate paths if an item blocks/alters navigation
+                }
+                
+                Debug.Log($"Element removed at ({x}, {y})");
+            }
+            return; 
+        }
     }
 
     public void OnPointerUp()
@@ -321,6 +343,37 @@ public class MazeInputHandler : MonoBehaviour
         processedCells.Clear();
         lastProcessedCell = null;
         currentMouseButton = null;
+    }
+
+    public void OnPointerEnter(int x, int y, BaseEventData eventData)
+    {
+        if (mazeData == null || mazeData.cells == null) return;
+
+        // 🔥 Support drag color painting logic if mouse button is held down
+        if (editorMode != null && editorMode.IsEditingWallColor())
+        {
+            if (Input.GetMouseButton(0) && editorMode.GetGlobalMaterialIndex() >= 0)
+            {
+                editorMode.ApplyColorToCell(x, y);
+                if (gridRenderer != null) gridRenderer.HideSolution();
+            }
+            return;
+        }
+    }
+
+    public void SetDeleteElementMode(bool enabled)
+    {
+        isDeleteElementMode = enabled;
+        if (enabled)
+        {
+            isMoveMode = false;
+            isSetElementsMode = true; // Treats it as an element placement variation
+            if (editorMode != null)
+            {
+                editorMode.ExitEditStartPointMode();
+                editorMode.ExitWallColorMode();
+            }
+        }
     }
 
     private void OnMoveButtonClick()
@@ -347,13 +400,24 @@ public class MazeInputHandler : MonoBehaviour
 
     private void OnWallColorButtonClick()
     {
-        isMoveMode = false;
-        isWallColorMode = true;
-        if (editorMode != null) editorMode.EnterWallColorMode();
+        if (editorMode == null) return;
 
+        // Force setup to Wall Color mode
+        isMoveMode = false;
+        isSetElementsMode = false;
+        isWallColorMode = true;
+        editorMode.ExitEditStartPointMode();
+        editorMode.EnterWallColorMode();
+        
         UpdateButtonAppearances();
         ApplyCurrentMode();
-        OnMoveModeChanged?.Invoke(isMoveMode); 
+
+        // Always open the color selection popup when the button is clicked
+        WallColorPopup popup = FindObjectOfType<WallColorPopup>();
+        if (popup != null)
+        {
+            popup.Open(); 
+        }
     }
 
     private void UpdateButtonAppearances()

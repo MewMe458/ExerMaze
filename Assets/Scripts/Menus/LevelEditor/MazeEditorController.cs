@@ -29,12 +29,14 @@ public class MazeEditorController : MonoBehaviour
     [SerializeField] private Button starButton;
     [SerializeField] private Button slowButton;
     [SerializeField] private Button teleportButton;
+    [SerializeField] private Button deleteElementButton;
 
     private Dictionary<Button, string> elementButtonMap;
     private Button currentSelectedButton;
 
     private MazeData currentMazeData;
     private bool isEditingStartPoint = false;
+    private bool isDeleteElementMode = false;
     private Color originalButtonColor;
 
     public MazeData CurrentMaze => currentMazeData;
@@ -49,6 +51,7 @@ public class MazeEditorController : MonoBehaviour
     public void SelectStar() => SelectElement(starButton, "Star");
     public void SelectSlowPotion() => SelectElement(slowButton, "SlowPotion");
     public void SelectTeleporter() => SelectElement(teleportButton, "Teleporter");
+    public void SelectDeleteElement() => SelectElement(deleteElementButton, "Delete");
 
     // Bind this to each of the 6 UI Buttons' OnClick() event in the Inspector.
     // Pass the index (0 through 5) corresponding to the button.
@@ -92,7 +95,8 @@ public class MazeEditorController : MonoBehaviour
             shieldButton,
             starButton,
             slowButton,
-            teleportButton
+            teleportButton,
+            deleteElementButton
         };
 
         foreach (Button btn in buttons)
@@ -108,25 +112,32 @@ public class MazeEditorController : MonoBehaviour
 
     public void TryPlaceElement(Vector2Int cellPosition)
     {
-        if (CurrentMaze == null)
+        if (CurrentMaze == null || !IsChallengeMode || string.IsNullOrEmpty(SelectedElementType))
             return;
 
-        if (!IsChallengeMode)
-            return;
-
-        if (string.IsNullOrEmpty(SelectedElementType))
-            return;
-
-        if (cellPosition == CurrentMaze.start ||
-            cellPosition == CurrentMaze.end)
+        if (cellPosition == CurrentMaze.start || cellPosition == CurrentMaze.end)
         {
-            Debug.LogWarning("Cannot place on Start/Goal.");
+            Debug.LogWarning("Cannot modify elements on Start/Goal positions.");
             return;
         }
 
-        var existing = CurrentMaze.elements
-            .FirstOrDefault(e => e.position == cellPosition);
+        // Check if an entry already exists at this location
+        var existing = CurrentMaze.elements.FirstOrDefault(e => e.position == cellPosition);
 
+        // 🔥 IF THE DELETE TOOL IS CURRENTLY SELECT-ACTIVE
+        if (SelectedElementType == "Delete")
+        {
+            if (existing != null)
+            {
+                CurrentMaze.elements.Remove(existing);
+                gridRenderer.RemoveElementVisual(cellPosition); // Clears the existing prefab instance
+                gridRenderer.HideSolution(); // Recalculate paths if items alter layout rules
+                Debug.Log($"Element successfully deleted at {cellPosition}");
+            }
+            return; // Halt here since we don't want to place anything new
+        }
+
+        // --- Original Placement Behavior for the other 6 items ---
         if (existing != null)
         {
             CurrentMaze.elements.Remove(existing);
@@ -138,10 +149,21 @@ public class MazeEditorController : MonoBehaviour
             position = cellPosition,
             elementType = SelectedElementType
         };
-
         CurrentMaze.elements.Add(element);
 
         gridRenderer.DrawElement(element);
+    }
+
+    private void OnDeleteElementButtonClick()
+    {
+        // Set Delete mode to true
+        isDeleteElementMode = true;
+
+        // Pass the state down to MazeInputHandler
+        if (inputHandler != null)
+        {
+            inputHandler.SetDeleteElementMode(isDeleteElementMode);
+        }
     }
 
     void Start()
@@ -184,6 +206,12 @@ public class MazeEditorController : MonoBehaviour
                 Debug.LogWarning("Set Start Point button has no Image component. Color changes will not be applied.");
                 originalButtonColor = Color.white;
             }
+        }
+
+        if (deleteElementButton != null)
+        {
+            deleteElementButton.onClick.RemoveAllListeners();
+            deleteElementButton.onClick.AddListener(SelectDeleteElement);
         }
 
         ResetElementButtonVisuals();

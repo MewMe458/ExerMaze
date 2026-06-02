@@ -8,41 +8,31 @@ public class WallColorPopup : MonoBehaviour
     [SerializeField] private GameObject root;
     [SerializeField] private Transform contentParent;
     [SerializeField] private Button materialButtonPrefab;
-    [SerializeField] private Button setButton;
-    [SerializeField] private Button cancelButton;
-
-    private List<WallMaterialData> wallMaterials;
-
-    private int selectedMaterialIndex = -1;
 
     private MazeGridRenderer gridRenderer;
     private MazeEditorMode editorMode;
+    private List<WallMaterialData> wallMaterials;
+    private int selectedMaterialIndex = -1;
 
     void Start()
     {
-        root.SetActive(false);
-
-        gridRenderer = FindFirstObjectByType<MazeGridRenderer>();
-        editorMode = FindFirstObjectByType<MazeEditorMode>();
+        var controller = GetComponentInParent<MazeEditorController>();
+        gridRenderer = controller != null ? controller.GetComponentInChildren<MazeGridRenderer>() : null;
+        editorMode = controller != null ? controller.GetComponentInChildren<MazeEditorMode>() : null;
 
         if (gridRenderer != null)
         {
             wallMaterials = gridRenderer.wallMaterials;
+            PopulateMaterials();
         }
-        else 
-        {
-            wallMaterials = new List<WallMaterialData>();
-        }
-
-        GenerateMaterialButtons();
-
-        setButton.onClick.AddListener(SetMaterial);
-        cancelButton.onClick.AddListener(Close);
     }
 
-    void GenerateMaterialButtons()
+    void PopulateMaterials()
     {
-        // Clear old buttons first
+        if (wallMaterials == null || materialButtonPrefab == null || contentParent == null)
+            return;
+
+        // Clear existing children
         foreach (Transform child in contentParent)
         {
             Destroy(child.gameObject);
@@ -50,10 +40,8 @@ public class WallColorPopup : MonoBehaviour
 
         for (int i = 0; i < wallMaterials.Count; i++)
         {
-            int index = i;
-
+            int index = i; // Avoid closure issues
             Button btn = Instantiate(materialButtonPrefab, contentParent);
-
             TMP_Text txt = btn.GetComponentInChildren<TMP_Text>();
             Image img = btn.GetComponent<Image>();
 
@@ -79,17 +67,22 @@ public class WallColorPopup : MonoBehaviour
             }
 
             btn.onClick.RemoveAllListeners();
-
             btn.onClick.AddListener(() =>
             {
                 selectedMaterialIndex = index;
-
                 Debug.Log("Selected Material: " + wallMaterials[index].materialName);
+                
+                // Save selection down to the Mode tracker and close
+                if (editorMode != null)
+                {
+                    editorMode.SetGlobalMaterialIndex(selectedMaterialIndex);
+                }
+                Close();
             });
         }
     }
 
-    public void Open(int x, int y)
+    public void Open()
     {
         selectedMaterialIndex = -1;
         root.SetActive(true);
@@ -98,21 +91,5 @@ public class WallColorPopup : MonoBehaviour
     public void Close()
     {
         root.SetActive(false);
-    }
-
-    void SetMaterial()
-    {
-        if (selectedMaterialIndex < 0)
-            return;
-
-        Vector2Int pos = editorMode.GetSelectedWallCell();
-
-        MazeData mazeData = gridRenderer.GetMazeData();
-
-        mazeData.cells[pos.x, pos.y].MaterialIndex = selectedMaterialIndex;
-
-        gridRenderer.UpdateGrid(mazeData);
-
-        Close();
     }
 }

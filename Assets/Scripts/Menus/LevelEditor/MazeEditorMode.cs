@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 public class MazeEditorMode : MonoBehaviour
 {
-    [SerializeField] private GameObject invalidSelectionMessage; // Changed to GameObject to include image background
+    [SerializeField] private GameObject invalidSelectionMessage;
 
     private MazeInputHandler inputHandler;
     private MazeData mazeData;
@@ -13,13 +13,13 @@ public class MazeEditorMode : MonoBehaviour
     private int rows, cols;
     private bool isEditingStartPoint = false;
     private bool isEditingWallColor = false;
-    private Vector2Int selectedWallCell;
-    private Dictionary<Vector2Int, Color> originalCornerColors;
+    
+    // 🔥 Track global chosen material texture index
+    private int globalMaterialIndex = -1; 
     private MazeGenerator mazeGenerator;
 
     void Awake()
     {
-        originalCornerColors = new Dictionary<Vector2Int, Color>();
     }
 
     void Start()
@@ -28,17 +28,9 @@ public class MazeEditorMode : MonoBehaviour
         {
             invalidSelectionMessage.SetActive(false);
         }
-        else
-        {
-            Debug.LogError("Invalid Selection Message is not assigned in the Inspector. Please assign the GameObject containing the warning UI.");
-        }
 
         var controller = GetComponentInParent<MazeEditorController>();
         mazeGenerator = controller != null ? controller.GetMazeGenerator() : null;
-        if (mazeGenerator == null)
-        {
-            Debug.LogError("MazeGenerator not found. Please ensure MazeEditorController and MazeGenerator are properly set up.");
-        }
 
         inputHandler = GetComponent<MazeInputHandler>();
         if (inputHandler != null)
@@ -57,93 +49,13 @@ public class MazeEditorMode : MonoBehaviour
 
     public void EnterEditStartPointMode()
     {
-        if (mazeData == null || mazeData.cells == null)
-        {
-            Debug.LogWarning("Cannot enter Edit Start Point mode: mazeData or mazeData.cells is null.");
-            return;
-        }
-
         isEditingStartPoint = true;
-
-        originalCornerColors.Clear();
-        Vector2Int[] corners = GetCornerCells();
-        foreach (Vector2Int corner in corners)
-        {
-            Image cellImage = cellButtons[corner.x, corner.y].GetComponent<Image>();
-            originalCornerColors[corner] = cellImage.color;
-            cellImage.color = Color.blue;
-        }
-
-        if (invalidSelectionMessage != null)
-        {
-            invalidSelectionMessage.SetActive(false);
-        }
     }
 
     public void ExitEditStartPointMode()
     {
         isEditingStartPoint = false;
-
-        foreach (var corner in originalCornerColors)
-        {
-            Vector2Int pos = corner.Key;
-            Image cellImage = cellButtons[pos.x, pos.y].GetComponent<Image>();
-            cellImage.color = corner.Value;
-        }
-        originalCornerColors.Clear();
-
-        if (invalidSelectionMessage != null)
-        {
-            invalidSelectionMessage.SetActive(false);
-        }
-
         UpdateGrid();
-    }
-
-    public void HandleStartPointSelection(int x, int y)
-    {
-        if (IsCornerCell(x, y))
-        {
-            for (int i = 0; i < rows; i++)
-            {
-                for (int j = 0; j < cols; j++)
-                {
-                    mazeData.cells[i, j].IsStart = false;
-                }
-            }
-
-            mazeData.cells[x, y].IsStart = true;
-            mazeData.start = new Vector2Int(x, y);
-
-            if (mazeGenerator != null)
-            {
-                mazeGenerator.SetEndPointOppositeStart();
-            }
-            else
-            {
-                Debug.LogWarning("MazeGenerator is null. Cannot update end point.");
-            }
-
-            ExitEditStartPointMode();
-
-            var editorController = GetComponentInParent<MazeEditorController>();
-            if (editorController != null)
-            {
-                editorController.ExitEditStartPointMode();
-            }
-        }
-        else
-        {
-            if (invalidSelectionMessage != null)
-            {
-                TMP_Text textComponent = invalidSelectionMessage.GetComponentInChildren<TMP_Text>();
-                if (textComponent != null)
-                {
-                    textComponent.text = "Please select a corner cell!";
-                }
-                invalidSelectionMessage.SetActive(true);
-            }
-        }
     }
 
     public bool IsEditingStartPoint()
@@ -153,9 +65,10 @@ public class MazeEditorMode : MonoBehaviour
 
     private void OnMoveModeChanged(bool isEnabled)
     {
-        if (isEnabled && isEditingStartPoint)
+        if (isEnabled)
         {
             ExitEditStartPointMode();
+            ExitWallColorMode(); // 🔥 Automatically clear wall painter mode when leaving
         }
     }
 
@@ -168,25 +81,6 @@ public class MazeEditorMode : MonoBehaviour
         }
     }
 
-    private bool IsCornerCell(int x, int y)
-    {
-        return (x == 0 && y == 0) ||
-               (x == 0 && y == cols - 1) ||
-               (x == rows - 1 && y == 0) ||
-               (x == rows - 1 && y == cols - 1);
-    }
-
-    private Vector2Int[] GetCornerCells()
-    {
-        return new Vector2Int[]
-        {
-            new Vector2Int(0, 0),
-            new Vector2Int(0, cols - 1),
-            new Vector2Int(rows - 1, 0),
-            new Vector2Int(rows - 1, cols - 1)
-        };
-    }
-
     public void EnterWallColorMode()
     {
         isEditingWallColor = true;
@@ -195,6 +89,7 @@ public class MazeEditorMode : MonoBehaviour
     public void ExitWallColorMode()
     {
         isEditingWallColor = false;
+        globalMaterialIndex = -1; // Reset selection
     }
 
     public bool IsEditingWallColor()
@@ -202,14 +97,29 @@ public class MazeEditorMode : MonoBehaviour
         return isEditingWallColor;
     }
 
-    public void SetSelectedWallCell(int x, int y)
+    // 🔥 Added to set and get the color selected from popup palette
+    public void SetGlobalMaterialIndex(int index)
     {
-        selectedWallCell = new Vector2Int(x, y);
+        globalMaterialIndex = index;
     }
 
-    public Vector2Int GetSelectedWallCell()
+    public int GetGlobalMaterialIndex()
     {
-        return selectedWallCell;
+        return globalMaterialIndex;
+    }
+
+    public void ApplyColorToCell(int x, int y)
+    {
+        if (mazeData == null || globalMaterialIndex < 0) return;
+
+        mazeData.cells[x, y].MaterialIndex = globalMaterialIndex;
+
+        // Force GridRenderer to update this cell representation
+        var gridRenderer = GetComponent<MazeGridRenderer>();
+        if (gridRenderer != null)
+        {
+            gridRenderer.UpdateGrid(mazeData); 
+        }
     }
 
     public enum MazeEditorMode_Enum
@@ -218,6 +128,6 @@ public class MazeEditorMode : MonoBehaviour
         EditWalls,
         SetStart,
         SetEnd,
-        SetElement // New mode added for placing standard elements
+        SetElement
     }
 }

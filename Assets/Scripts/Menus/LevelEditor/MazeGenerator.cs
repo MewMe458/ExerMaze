@@ -19,17 +19,19 @@ public class MazeGenerator : MonoBehaviour
             elements = new List<MazeData.ElementData>()
         };
 
-        // Initialize all cells with walls
+        // Initialize all cells with outer perimeter walls only
         for (int x = 0; x < rows; x++)
         {
             for (int y = 0; y < columns; y++)
             {
                 mazeData.cells[x, y] = new MazeData.CellData
                 {
-                    WallRight = true,
-                    WallFront = true,
-                    WallLeft = true,
-                    WallBack = true,
+                    // Only true if it is on the edge bounds of the maze grid
+                    WallBack = (x == 0),
+                    WallFront = (x == rows - 1),
+                    WallLeft = (y == 0),
+                    WallRight = (y == columns - 1),
+
                     IsVisited = false,
                     IsGoal = false,
                     IsStart = false
