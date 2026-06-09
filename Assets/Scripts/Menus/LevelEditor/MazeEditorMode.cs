@@ -11,16 +11,10 @@ public class MazeEditorMode : MonoBehaviour
     private MazeData mazeData;
     private Button[,] cellButtons;
     private int rows, cols;
-    private bool isEditingStartPoint = false;
     private bool isEditingWallColor = false;
     
-    // 🔥 Track global chosen material texture index
     private int globalMaterialIndex = -1; 
     private MazeGenerator mazeGenerator;
-
-    void Awake()
-    {
-    }
 
     void Start()
     {
@@ -47,32 +41,35 @@ public class MazeEditorMode : MonoBehaviour
         this.cols = mazeData.columns;
     }
 
-    public void EnterEditStartPointMode()
-    {
-        isEditingStartPoint = true;
-    }
+    // 🔥 Simplified: We only need to tell the grid to refresh
+    public void EnterEditStartPointMode() { } 
 
     public void ExitEditStartPointMode()
     {
-        isEditingStartPoint = false;
         UpdateGrid();
     }
 
+    // 🔥 This is now handled by MazeEditorController's Enum state
     public bool IsEditingStartPoint()
     {
-        return isEditingStartPoint;
+        var controller = GetComponentInParent<MazeEditorController>();
+        if (controller == null) return false;
+
+        // Returns true if either editor mode tool is currently operating the grid placement sequence
+        return controller.SelectedElementType == "StartPoint" || controller.SelectedElementType == "EndPoint";
     }
 
     private void OnMoveModeChanged(bool isEnabled)
     {
         if (isEnabled)
         {
-            ExitEditStartPointMode();
-            ExitWallColorMode(); // 🔥 Automatically clear wall painter mode when leaving
+            var controller = GetComponentInParent<MazeEditorController>();
+            if(controller != null) controller.DisableElementPlacement();
+            ExitWallColorMode();
         }
     }
 
-    private void UpdateGrid()
+    public void UpdateGrid()
     {
         var gridRenderer = GetComponent<MazeGridRenderer>();
         if (gridRenderer != null)
@@ -81,45 +78,23 @@ public class MazeEditorMode : MonoBehaviour
         }
     }
 
-    public void EnterWallColorMode()
-    {
-        isEditingWallColor = true;
-    }
+    public void EnterWallColorMode() => isEditingWallColor = true;
 
     public void ExitWallColorMode()
     {
         isEditingWallColor = false;
-        globalMaterialIndex = -1; // Reset selection
+        globalMaterialIndex = -1;
     }
 
-    public bool IsEditingWallColor()
-    {
-        return isEditingWallColor;
-    }
-
-    // 🔥 Added to set and get the color selected from popup palette
-    public void SetGlobalMaterialIndex(int index)
-    {
-        globalMaterialIndex = index;
-    }
-
-    public int GetGlobalMaterialIndex()
-    {
-        return globalMaterialIndex;
-    }
+    public bool IsEditingWallColor() => isEditingWallColor;
+    public void SetGlobalMaterialIndex(int index) => globalMaterialIndex = index;
+    public int GetGlobalMaterialIndex() => globalMaterialIndex;
 
     public void ApplyColorToCell(int x, int y)
     {
         if (mazeData == null || globalMaterialIndex < 0) return;
-
         mazeData.cells[x, y].MaterialIndex = globalMaterialIndex;
-
-        // Force GridRenderer to update this cell representation
-        var gridRenderer = GetComponent<MazeGridRenderer>();
-        if (gridRenderer != null)
-        {
-            gridRenderer.UpdateGrid(mazeData); 
-        }
+        UpdateGrid();
     }
 
     public enum MazeEditorMode_Enum

@@ -205,17 +205,12 @@ public class MazeInputHandler : MonoBehaviour
                             continue;
                         }
 
-                        bool addWall = true;
-                        if (currentMouseButton == PointerEventData.InputButton.Left)
-                        {
-                            addWall = addToggle.isOn;
-                        }
-                        // else
-                        // {
-                        //     addWall = !addToggle.isOn;
-                        // }
+                        WallDirection direction =
+                            (WallDirection)wallDirectionDropdown.value;
 
-                        WallDirection direction = (WallDirection)wallDirectionDropdown.value;
+                        bool addWall =
+                            !GetCurrentWallState(x, y, direction);
+
                         ToggleWall(x, y, direction, addWall);
                         processedCells.Add(currentCell);
                         lastProcessedCell = currentCell;
@@ -229,7 +224,6 @@ public class MazeInputHandler : MonoBehaviour
 
     public void OnPointerDown(int x, int y, BaseEventData eventData)
     {
-
         if (mazeData == null || mazeData.cells == null || wallDirectionDropdown == null || addToggle == null)
         {
             Debug.LogError($"OnPointerDown failed: mazeData is {(mazeData == null ? "null" : "not null")}, mazeData.cells is {(mazeData?.cells == null ? "null" : "not null")}, wallDirectionDropdown is {(wallDirectionDropdown == null ? "null" : "not null")}, addToggle is {(addToggle == null ? "null" : "not null")}");
@@ -243,27 +237,37 @@ public class MazeInputHandler : MonoBehaviour
         }
 
         var pointerData = eventData as PointerEventData;
-
-        if (editorController != null &&
-            editorController.CurrentMode == MazeEditorMode.MazeEditorMode_Enum.SetElement)
-        {
-            if (pointerData.button == PointerEventData.InputButton.Left)
-            {
-                editorController.TryPlaceElement(new Vector2Int(x, y));
-            }
-
-            return;
-        }
-        
         if (pointerData == null)
         {
             Debug.LogWarning("OnPointerDown: PointerEventData is null.");
             return;
         }
 
+        if (isMoveMode) return;
+
+        // 🔥 FIX 1: Intercept clicks when an active placement element tool is selected in EditorController.
+        // This ensures "StartPoint", "EndPoint", or challenge items route cleanly straight to placement logic.
+        if (editorController != null && !string.IsNullOrEmpty(editorController.SelectedElementType))
+        {
+            if (pointerData.button == PointerEventData.InputButton.Left)
+            {
+                editorController.TryPlaceElement(new Vector2Int(x, y));
+            }
+            return; // Stop execution here so it doesn't accidentally draw a wall underneath!
+        }
+
+        // Keep legacy fallback for compatibility if your EditorMode checks still query this
+        if (editorMode != null && editorMode.IsEditingStartPoint())
+        {
+            if (pointerData.button == PointerEventData.InputButton.Left)
+            {
+                gridRenderer.HideSolution();
+            }
+            return;
+        }
+
         if (editorMode != null && editorMode.IsEditingWallColor())
         {
-            // 🔥 If the user hasn't selected a valid color from the palette, reopen it
             if (editorMode.GetGlobalMaterialIndex() < 0)
             {
                 WallColorPopup popup = FindObjectOfType<WallColorPopup>();
@@ -271,24 +275,32 @@ public class MazeInputHandler : MonoBehaviour
                 return;
             }
 
-            // Apply chosen color to cell instantly
             editorMode.ApplyColorToCell(x, y);
             if (gridRenderer != null) gridRenderer.HideSolution();
             return;
         }
 
-        if (isMoveMode) return;
-
-        if (editorMode != null && editorMode.IsEditingStartPoint())
+        // 🔥 FIX 2: Check delete modes via EditorController map, but keeping your legacy fallback clean
+        if (isDeleteElementMode)
         {
-            if (pointerData.button == PointerEventData.InputButton.Left)
+            MazeData.ElementData elementToRemove = mazeData.elements.Find(e => e.position.x == x && e.position.y == y);
+            
+            if (elementToRemove != null)
             {
-                // editorMode.HandleStartPointSelection(x, y);
-                gridRenderer.HideSolution(); // Hide solution when setting start/end
+                mazeData.elements.Remove(elementToRemove);
+                
+                if (gridRenderer != null)
+                {
+                    gridRenderer.DestroyElementAt(x, y);
+                    gridRenderer.HideSolution();
+                }
+                
+                Debug.Log($"Element removed at ({x}, {y})");
             }
-            return;
+            return; 
         }
 
+        // Wall drag-editing fallback logic (Only fires if NO placement items/points are active)
         if (pointerData.button == PointerEventData.InputButton.Left || pointerData.button == PointerEventData.InputButton.Right)
         {
             isDragging = true;
@@ -296,44 +308,15 @@ public class MazeInputHandler : MonoBehaviour
             lastProcessedCell = null;
             currentMouseButton = pointerData.button;
 
-            bool addWall;
-            if (pointerData.button == PointerEventData.InputButton.Left)
-            {
-                addWall = addToggle.isOn;
-            }
-            else
-            {
-                addWall = !addToggle.isOn;
-            }
-
             WallDirection direction = (WallDirection)wallDirectionDropdown.value;
+            bool currentState = GetCurrentWallState(x, y, direction);
+            bool addWall = !currentState;
+
             ToggleWall(x, y, direction, addWall);
             processedCells.Add(new Vector2Int(x, y));
             lastProcessedCell = new Vector2Int(x, y);
 
             OnWallToggled?.Invoke(x, y, direction);
-        }
-
-        if (isDeleteElementMode)
-        {
-            // Find if there is an element at this (x, y) coordinate
-            MazeData.ElementData elementToRemove = mazeData.elements.Find(e => e.position.x == x && e.position.y == y);
-            
-            if (elementToRemove != null)
-            {
-                // Remove data entry
-                mazeData.elements.Remove(elementToRemove);
-                
-                // Tell the renderer to destroy the physical prefab instance
-                if (gridRenderer != null)
-                {
-                    gridRenderer.DestroyElementAt(x, y);
-                    gridRenderer.HideSolution(); // Recalculate paths if an item blocks/alters navigation
-                }
-                
-                Debug.Log($"Element removed at ({x}, {y})");
-            }
-            return; 
         }
     }
 
@@ -349,7 +332,6 @@ public class MazeInputHandler : MonoBehaviour
     {
         if (mazeData == null || mazeData.cells == null) return;
 
-        // 🔥 Support drag color painting logic if mouse button is held down
         if (editorMode != null && editorMode.IsEditingWallColor())
         {
             if (Input.GetMouseButton(0) && editorMode.GetGlobalMaterialIndex() >= 0)
@@ -367,7 +349,7 @@ public class MazeInputHandler : MonoBehaviour
         if (enabled)
         {
             isMoveMode = false;
-            isSetElementsMode = true; // Treats it as an element placement variation
+            isSetElementsMode = true;
             if (editorMode != null)
             {
                 editorMode.ExitEditStartPointMode();
@@ -402,7 +384,6 @@ public class MazeInputHandler : MonoBehaviour
     {
         if (editorMode == null) return;
 
-        // Force setup to Wall Color mode
         isMoveMode = false;
         isSetElementsMode = false;
         isWallColorMode = true;
@@ -412,7 +393,6 @@ public class MazeInputHandler : MonoBehaviour
         UpdateButtonAppearances();
         ApplyCurrentMode();
 
-        // Always open the color selection popup when the button is clicked
         WallColorPopup popup = FindObjectOfType<WallColorPopup>();
         if (popup != null)
         {
@@ -431,11 +411,9 @@ public class MazeInputHandler : MonoBehaviour
         if (editButton != null)
         {
             Image editImage = editButton.GetComponent<Image>();
-            // Update this line to check both booleans!
             if (editImage != null) editImage.color = (!isMoveMode && !isWallColorMode) ? Color.green : Color.white; 
         }
 
-        // Add this block for the Wall Color Button
         if (wallColorButton != null)
         {
             Image colorImage = wallColorButton.GetComponent<Image>();
@@ -584,7 +562,7 @@ public class MazeInputHandler : MonoBehaviour
             return (0, 0, 0, 0, 0);
         }
 
-        int size = mazeData.rows; // Assuming square maze
+        int size = mazeData.rows;
         int dogAndShieldMin = 2 + (size - 7);
         int dogAndShieldMax = Mathf.FloorToInt(size * size * 0.1f);
         int bonesMin = Mathf.FloorToInt(size * size * 0.1f);
@@ -647,17 +625,15 @@ public class MazeInputHandler : MonoBehaviour
             return;
         }
 
-        // Update mode toggles
         bool isChallengeMode = mazeData.mode == "Challenge";
-        relaxToggle.isOn = !isChallengeMode; // Triggers OnRelaxToggleChanged
-        challengeToggle.isOn = isChallengeMode; // Triggers OnChallengeToggleChanged
+        relaxToggle.isOn = !isChallengeMode;
+        challengeToggle.isOn = isChallengeMode;
         if (string.IsNullOrEmpty(mazeData.mode) || (mazeData.mode != "Relax" && mazeData.mode != "Challenge"))
         {
-            mazeData.mode = "Relax"; // Default for invalid/null mode
+            mazeData.mode = "Relax";
             relaxToggle.isOn = true;
         }
 
-        // Count elements
         var elementCounts = mazeData.elements
             ?.GroupBy(e => e.elementType)
             ?.ToDictionary(g => g.Key, g => g.Count()) ?? new Dictionary<string, int>();
@@ -685,5 +661,27 @@ public class MazeInputHandler : MonoBehaviour
             int bonesMax = ranges.bonesMax;
             int specialCount = ranges.specialCount;
         }
+    }
+
+    private bool GetCurrentWallState(int x, int y, WallDirection direction)
+    {
+        MazeData.CellData cell = mazeData.cells[x, y];
+
+        switch (direction)
+        {
+            case WallDirection.Top:
+                return cell.WallBack;
+
+            case WallDirection.Right:
+                return cell.WallRight;
+
+            case WallDirection.Bottom:
+                return cell.WallFront;
+
+            case WallDirection.Left:
+                return cell.WallLeft;
+        }
+
+        return false;
     }
 }

@@ -189,9 +189,11 @@ public class MazeGridRenderer : MonoBehaviour
                 Button cellButton = Instantiate(cellButtonPrefab, gridLayoutGroup.transform, false);
                 cellButton.name = $"Cell_{currentX}_{currentY}";
                 Image cellImage = cellButton.GetComponent<Image>();
+                
+                // Assign color safely here (Text generation is skipped temporarily)
+                cellButtons[currentX, currentY] = cellButton; 
                 cellImage.sprite = GetSpriteForCell(mazeData.cells[currentX, currentY]);
                 cellImage.color = GetCellColor(currentX, currentY);
-                cellButtons[currentX, currentY] = cellButton;
 
                 EventTrigger trigger = cellButton.gameObject.AddComponent<EventTrigger>();
                 EventTrigger.Entry pointerDownEntry = new EventTrigger.Entry();
@@ -205,6 +207,7 @@ public class MazeGridRenderer : MonoBehaviour
                 trigger.triggers.Add(pointerUpEntry);
             }
         }
+        RefreshAllCellTexts();
 
         gridPanel.anchorMin = new Vector2(0.5f, 0.5f);
         gridPanel.anchorMax = new Vector2(0.5f, 0.5f);
@@ -236,6 +239,9 @@ public class MazeGridRenderer : MonoBehaviour
                 cellImage.color = GetCellColor(x, y);
             }
         }
+
+        // 🔥 FIX: Refresh texts when the grid updates completely
+        RefreshAllCellTexts();
     }
 
     private void UpdateAffectedCells(int x, int y, MazeInputHandler.WallDirection direction)
@@ -297,6 +303,8 @@ public class MazeGridRenderer : MonoBehaviour
                 }
                 break;
         }
+
+        RefreshAllCellTexts();
     }
 
     public void SetZoom(float zoom)
@@ -411,12 +419,7 @@ public class MazeGridRenderer : MonoBehaviour
 
     public Color GetCellColor(int x, int y)
     {
-        if (mazeData.cells[x, y].IsStart)
-            return Color.green;
-        else if (mazeData.cells[x, y].IsGoal)
-            return Color.red;
-
-        // Fetch color from the centralized WallMaterialData list
+        // We removed the green and red returns here so they don't paint the button background.
         int matIndex = mazeData.cells[x, y].MaterialIndex;
         if (wallMaterials != null && matIndex >= 0 && matIndex < wallMaterials.Count)
         {
@@ -424,6 +427,70 @@ public class MazeGridRenderer : MonoBehaviour
         }
 
         return Color.white;
+    }
+
+    public void RefreshAllCellTexts()
+    {
+        if (cellButtons == null || mazeData == null) return;
+
+        for (int x = 0; x < rows; x++)
+        {
+            for (int y = 0; y < cols; y++)
+            {
+                UpdateCellText(x, y);
+            }
+        }
+    }
+
+    private void UpdateCellText(int x, int y)
+    {
+        if (cellButtons == null || cellButtons[x, y] == null) return;
+
+        Button cellButton = cellButtons[x, y];
+        TMP_Text cellText = cellButton.GetComponentInChildren<TMP_Text>();
+
+        bool isStart = mazeData.cells[x, y].IsStart;
+        bool isGoal = mazeData.cells[x, y].IsGoal;
+
+        if (isStart || isGoal)
+        {
+            if (cellText == null)
+            {
+                GameObject textObj = new GameObject("Label");
+                textObj.transform.SetParent(cellButton.transform, false);
+                cellText = textObj.AddComponent<TextMeshProUGUI>();
+                
+                cellText.alignment = TextAlignmentOptions.Center;
+                cellText.fontSize = 16; // Bumped up slightly for readability
+                cellText.fontStyle = FontStyles.Bold; // Make it stand out without a background color
+                cellText.raycastTarget = false;
+
+                RectTransform rect = textObj.GetComponent<RectTransform>();
+                rect.anchorMin = Vector2.zero;
+                rect.anchorMax = Vector2.one;
+                rect.offsetMin = Vector2.zero;
+                rect.offsetMax = Vector2.zero;
+            }
+
+            // Apply colors to the TEXT instead of the cell background
+            if (isStart)
+            {
+                cellText.text = "Start";
+                cellText.color = Color.green;
+            }
+            else if (isGoal)
+            {
+                cellText.text = "Goal";
+                cellText.color = Color.red;
+            }
+        }
+        else
+        {
+            if (cellText != null)
+            {
+                Destroy(cellText.gameObject);
+            }
+        }
     }
 
     public Button[,] GetCellButtons()

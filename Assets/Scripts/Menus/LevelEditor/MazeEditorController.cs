@@ -11,6 +11,7 @@ public class MazeEditorController : MonoBehaviour
     [SerializeField] private Button zoomInButton;
     [SerializeField] private Button zoomOutButton;
     [SerializeField] private Button setStartPointButton;
+    [SerializeField] private Button setEndPointButton;
     [SerializeField] private Button loadMazeButton;
     [SerializeField] private Button exportMazeButton;
     [SerializeField] private Button validateButton;
@@ -37,6 +38,8 @@ public class MazeEditorController : MonoBehaviour
     private MazeData currentMazeData;
     private bool isEditingStartPoint = false;
     private bool isDeleteElementMode = false;
+    private bool isEditingEndPoint = false;
+    private Color originalEndButtonColor;
     private Color originalButtonColor;
 
     public MazeData CurrentMaze => currentMazeData;
@@ -44,6 +47,7 @@ public class MazeEditorController : MonoBehaviour
     public string SelectedElementType {get; private set;}
     public bool IsChallengeMode => CurrentMaze != null && CurrentMaze.mode == "Challenge";
 
+    public void OnSetEndPointClick() => OnSetEndPoint();
     // Call these methods directly from your 6 new UI Buttons OnClick events
     public void SelectDogNPC() => SelectElement(dogButton, "DogNPC");
     public void SelectBone() => SelectElement(boneButton, "Bone");
@@ -110,14 +114,49 @@ public class MazeEditorController : MonoBehaviour
         }
     }
 
+    public bool IsEditingStartPointMode() => isEditingStartPoint;
+
     public void TryPlaceElement(Vector2Int cellPosition)
     {
-        if (CurrentMaze == null || !IsChallengeMode || string.IsNullOrEmpty(SelectedElementType))
-            return;
+        if (currentMazeData == null) return;
 
-        if (cellPosition == CurrentMaze.start || cellPosition == CurrentMaze.end)
+        // 🔥 Logic to move the Start Point
+        if (SelectedElementType == "StartPoint")
         {
-            Debug.LogWarning("Cannot modify elements on Start/Goal positions.");
+            for (int x = 0; x < currentMazeData.rows; x++)
+            {
+                for (int y = 0; y < currentMazeData.columns; y++)
+                {
+                    currentMazeData.cells[x, y].IsStart = false;
+                }
+            }
+            currentMazeData.start = cellPosition;
+            currentMazeData.cells[cellPosition.x, cellPosition.y].IsStart = true;
+
+            gridRenderer.UpdateGrid(currentMazeData);
+            Debug.Log($"Start point moved to: {cellPosition}");
+            return;
+        }
+
+        // 🔥 ADDED: End Goal Point Placement Logic
+        if (SelectedElementType == "EndPoint")
+        {
+            // 1. Clear current goal status from all cells
+            for (int x = 0; x < currentMazeData.rows; x++)
+            {
+                for (int y = 0; y < currentMazeData.columns; y++)
+                {
+                    currentMazeData.cells[x, y].IsGoal = false;
+                }
+            }
+
+            // 2. Set new end goal position
+            currentMazeData.end = cellPosition;
+            currentMazeData.cells[cellPosition.x, cellPosition.y].IsGoal = true;
+
+            // 3. Refresh the UI to move the "Goal" text label
+            gridRenderer.UpdateGrid(currentMazeData);
+            Debug.Log($"End goal point moved to: {cellPosition}");
             return;
         }
 
@@ -136,6 +175,15 @@ public class MazeEditorController : MonoBehaviour
             }
             return; // Halt here since we don't want to place anything new
         }
+
+        if (cellPosition == currentMazeData.start || cellPosition == currentMazeData.end)
+        {
+            Debug.LogWarning("Cannot modify elements on Start/Goal positions.");
+            return;
+        }
+
+        if (!IsChallengeMode || string.IsNullOrEmpty(SelectedElementType))
+            return;
 
         // --- Original Placement Behavior for the other 6 items ---
         if (existing != null)
@@ -208,6 +256,13 @@ public class MazeEditorController : MonoBehaviour
             }
         }
 
+        if (setEndPointButton != null)
+        {
+            setEndPointButton.onClick.AddListener(OnSetEndPoint);
+            Image buttonImage = setEndPointButton.GetComponent<Image>();
+            if (buttonImage != null) originalEndButtonColor = buttonImage.color;
+        }
+
         if (deleteElementButton != null)
         {
             deleteElementButton.onClick.RemoveAllListeners();
@@ -239,7 +294,9 @@ public class MazeEditorController : MonoBehaviour
         gridRenderer.InitializeGrid(currentMazeData);
         inputHandler.Initialize(currentMazeData, gridRenderer.GetCellButtons());
         isEditingStartPoint = false;
+        isEditingEndPoint = false;
         UpdateButtonColor();
+        UpdateEndButtonColor();
         editorMode.ExitEditStartPointMode();
     }
 
@@ -251,31 +308,67 @@ public class MazeEditorController : MonoBehaviour
         gridRenderer.InitializeGrid(currentMazeData);
         inputHandler.Initialize(currentMazeData, gridRenderer.GetCellButtons());
         isEditingStartPoint = false;
+        isEditingEndPoint = false;
         UpdateButtonColor();
+        UpdateEndButtonColor();
         editorMode.ExitEditStartPointMode();
     }
 
     void OnSetStartPoint()
     {
-        if (currentMazeData == null)
-        {
-            Debug.LogWarning("Cannot set start point: No maze data available.");
-            return;
-        }
-
         gridRenderer.ResetSolutionVisibility();
         isEditingStartPoint = !isEditingStartPoint;
 
         if (isEditingStartPoint)
         {
+            CurrentMode = MazeEditorMode.MazeEditorMode_Enum.SetElement;
+            SelectedElementType = "StartPoint";
             editorMode.EnterEditStartPointMode();
-            UpdateButtonColor();
+            Debug.Log("Start Point Mode Active: Click a cell to set Start.");
         }
         else
         {
+            SelectedElementType = "";
             editorMode.ExitEditStartPointMode();
-            UpdateButtonColor();
         }
+        UpdateButtonColor();
+    }
+
+    void OnSetEndPoint()
+    {
+        if (currentMazeData == null)
+        {
+            Debug.LogWarning("Cannot set end goal point: No maze data available.");
+            return;
+        }
+
+        gridRenderer.ResetSolutionVisibility();
+        
+        // Toggle state
+        isEditingEndPoint = !isEditingEndPoint;
+        
+        // Turn off Start point placement if it's currently open to prevent conflicts
+        if (isEditingEndPoint)
+        {
+            isEditingStartPoint = false;
+            if (setStartPointButton != null)
+            {
+                Image startImg = setStartPointButton.GetComponent<Image>();
+                if (startImg != null) startImg.color = originalButtonColor;
+            }
+
+            ResetElementButtonVisuals(); // Clean up item selections
+
+            CurrentMode = MazeEditorMode.MazeEditorMode_Enum.SetElement;
+            SelectedElementType = "EndPoint";
+            Debug.Log("End Goal Mode Active: Click a cell to set Goal.");
+        }
+        else
+        {
+            SelectedElementType = "";
+        }
+
+        UpdateEndButtonColor();
     }
 
     void OnShowSolution()
@@ -372,6 +465,18 @@ public class MazeEditorController : MonoBehaviour
             if (buttonImage != null)
             {
                 buttonImage.color = isEditingStartPoint ? Color.yellow : originalButtonColor;
+            }
+        }
+    }
+
+    private void UpdateEndButtonColor()
+    {
+        if (setEndPointButton != null)
+        {
+            Image buttonImage = setEndPointButton.GetComponent<Image>();
+            if (buttonImage != null)
+            {
+                buttonImage.color = isEditingEndPoint ? Color.yellow : originalEndButtonColor;
             }
         }
     }
