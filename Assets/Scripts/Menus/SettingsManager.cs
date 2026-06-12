@@ -112,21 +112,6 @@ public class SettingsManager : MonoBehaviour
             screenshotManager.SetScreenshotFolder(currentPath, null);
         #endif
 
-//         string savedDirectory = PlayerPrefs.GetString(DIRECTORY_KEY, defaultDirectory);
-//         if (screenshotManager.GetScreenshotFolder() != savedDirectory)
-//         {
-//             screenshotManager.InitializeScreenshotFolder();
-//             PlayerPrefs.SetString(DIRECTORY_KEY, defaultDirectory);
-//             PlayerPrefs.Save();
-// #if ENABLE_WINMD_SUPPORT
-//             screenshotManager.SetScreenshotFolder(defaultDirectory, null);
-// #endif
-//         }
-//         else
-//         {
-//             UnityEngine.Debug.Log("SettingsManager: Screenshot folder already initialized.");
-//         }
-
         UpdateDirectoryText();
         SetupCoordinatesDropdown();
 

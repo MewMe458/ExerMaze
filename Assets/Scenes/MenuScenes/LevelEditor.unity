@@ -8096,6 +8096,10 @@ MonoBehaviour:
   backPanel: {fileID: 297626737}
   backConfirmPopUp: {fileID: 1163137724}
   backSavePopUp: {fileID: 42933459}
+  yesBackButton: {fileID: 804510793}
+  noBackButton: {fileID: 1680009057}
+  yesSaveButton: {fileID: 576848750}
+  noSaveButton: {fileID: 1991586069}
   mazeFileHandler: {fileID: 1848235406}
   mazeEditorController: {fileID: 1848235401}
 --- !u!114 &1179540252
@@ -13649,7 +13653,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1773277322
 RectTransform:
   m_ObjectHideFlags: 0
@@ -14396,18 +14400,6 @@ MonoBehaviour:
   relaxToggle: {fileID: 529937071}
   challengeToggle: {fileID: 1438158354}
   elementTogglesPanel: {fileID: 1773277321}
-  dogButton: {fileID: 1702632685}
-  boneButton: {fileID: 1571412935}
-  shieldButton: {fileID: 1173427696}
-  starButton: {fileID: 285422829}
-  slowButton: {fileID: 1424043525}
-  teleportButton: {fileID: 1525483348}
-  dogPrefab: {fileID: 6192282244647998859, guid: eaf1b368edb1fe04691fb372fe91a9c9, type: 3}
-  bonePrefab: {fileID: 662260492618992360, guid: 2586f7b94f795dc46abcb7ddda6f9e2a, type: 3}
-  shieldPrefab: {fileID: 5629250396435875746, guid: 5571ff95fe2dd1a4f8ba238ed6c32b50, type: 3}
-  starPrefab: {fileID: 6994740486974483924, guid: 4fb14de5f14f48846b24661ea66bdb3f, type: 3}
-  slowPrefab: {fileID: 662260492618992360, guid: 590376f9bbc52114f8af582a9146fc83, type: 3}
-  teleportPrefab: {fileID: 662260492618992360, guid: 5778de5d733c04845a9ea6d07f21ed22, type: 3}
 --- !u!114 &1848235403
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -14613,7 +14605,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 884887b89a9e72b4d8ac22e74d368474, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  invalidSelectionMessage: {fileID: 1478916580}
 --- !u!114 &1848235405
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -14714,6 +14705,7 @@ MonoBehaviour:
   root: {fileID: 161881910}
   contentParent: {fileID: 92917149}
   materialButtonPrefab: {fileID: 8858293097663991200, guid: e5d19e85b97e75a47873fca10f7c213d, type: 3}
+  cancelButton: {fileID: 787682254}
 --- !u!1 &1940519664
 GameObject:
   m_ObjectHideFlags: 0

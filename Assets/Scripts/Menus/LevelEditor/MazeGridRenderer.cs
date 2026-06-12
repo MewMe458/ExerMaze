@@ -555,13 +555,13 @@ public class MazeGridRenderer : MonoBehaviour
             case "DogNPC":
                 return dogIcon;
 
-            case "Bone":
+            case "Bones":
                 return boneIcon;
 
             case "Shield":
                 return shieldIcon;
 
-            case "Star":
+            case "Special":
                 return starIcon;
 
             case "SlowPotion":
@@ -621,9 +621,9 @@ public class MazeGridRenderer : MonoBehaviour
         switch (type)
         {
             case "DogNPC": return dogNPCPrefab;
-            case "Bone": return bonePrefab;
+            case "Bones": return bonePrefab;
             case "Shield": return shieldPrefab;
-            case "Star": return starPrefab;
+            case "Special": return starPrefab;
             case "SlowPotion": return slowPotionPrefab;
             case "Teleporter": return teleporterPrefab;
             default: return null;

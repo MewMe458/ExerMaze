@@ -405,4 +405,37 @@ public abstract class LevelLoader : MonoBehaviour
             Destroy(obj);
         }
     }
+
+    protected virtual void InstantiateElements(MazeData mazeData)
+    {
+        if (mazeData == null || mazeData.elements == null || elementPrefabMapping == null) 
+            return;
+
+        foreach (var element in mazeData.elements)
+        {
+            GameObject prefab = elementPrefabMapping.GetPrefabForType(element.elementType);
+            if (prefab == null) continue;
+
+            // Convert 2D data grid grid arrays into your standard 3D spatial coordinate calculations
+            float posX = element.position.y * cellSize;
+            float posZ = (mazeData.rows - 1 - element.position.x) * cellSize;
+            Vector3 position = new Vector3(posX, prefab.transform.position.y, posZ);
+
+            GameObject obj = Instantiate(prefab, position, prefab.transform.rotation, transform);
+            obj.name = $"{element.elementType}_{element.position.x}_{element.position.y}";
+            
+            // Tag it if you use system-wide entity clearing structures
+            obj.tag = "LevelObject"; 
+
+            // Handle specific configurations for things like unique Dog field-of-view sizes
+            if ((element.elementType == "Dog" || element.elementType == "DogNPC") && element.detection > 0f)
+            {
+                var dogChase = obj.GetComponent<DogNPCChase>();
+                if (dogChase != null)
+                {
+                    dogChase.DetectionSize = element.detection / 2.0f * cellSize;
+                }
+            }
+        }
+    }
 }

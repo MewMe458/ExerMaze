@@ -1451,7 +1451,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   elementPrefabs:
-  - type: Dog
+  - type: DogNPC
     prefab: {fileID: 6192282244647998859, guid: eaf1b368edb1fe04691fb372fe91a9c9, type: 3}
   - type: Bones
     prefab: {fileID: 662260492618992360, guid: 2586f7b94f795dc46abcb7ddda6f9e2a, type: 3}
@@ -1459,6 +1459,10 @@ MonoBehaviour:
     prefab: {fileID: 5629250396435875746, guid: 5571ff95fe2dd1a4f8ba238ed6c32b50, type: 3}
   - type: Special
     prefab: {fileID: 6994740486974483924, guid: 4fb14de5f14f48846b24661ea66bdb3f, type: 3}
+  - type: SlowPotion
+    prefab: {fileID: 662260492618992360, guid: 590376f9bbc52114f8af582a9146fc83, type: 3}
+  - type: Teleporter
+    prefab: {fileID: 662260492618992360, guid: 5778de5d733c04845a9ea6d07f21ed22, type: 3}
 --- !u!114 &825798115
 MonoBehaviour:
   m_ObjectHideFlags: 0

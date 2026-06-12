@@ -8,6 +8,8 @@ public class WallColorPopup : MonoBehaviour
     [SerializeField] private GameObject root;
     [SerializeField] private Transform contentParent;
     [SerializeField] private Button materialButtonPrefab;
+    // 🔥 ADDED: Reference to your close/cancel button so we can listen to clicks
+    [SerializeField] private Button cancelButton; 
 
     private MazeGridRenderer gridRenderer;
     private MazeEditorMode editorMode;
@@ -24,6 +26,13 @@ public class WallColorPopup : MonoBehaviour
         {
             wallMaterials = gridRenderer.wallMaterials;
             PopulateMaterials();
+        }
+
+        // 🔥 ADDED: Hook up the Cancel button functionality automatically on startup
+        if (cancelButton != null)
+        {
+            cancelButton.onClick.RemoveAllListeners();
+            cancelButton.onClick.AddListener(OnCancelPressed);
         }
     }
 
@@ -80,6 +89,32 @@ public class WallColorPopup : MonoBehaviour
                 Close();
             });
         }
+    }
+
+    // ⚙️ UPDATED: Cancel handler to reset both the logic mode and the UI buttons
+    private void OnCancelPressed()
+    {
+        // Find or check the input handler to update button highlights
+        if (editorMode != null)
+        {
+            // First drop out of custom wall painting states
+            editorMode.ExitWallColorMode(); 
+
+            // Find the input handler sitting on the controller structure to update visual elements
+            MazeInputHandler handler = editorMode.GetComponent<MazeInputHandler>();
+            if (handler != null)
+            {
+                handler.ForceReturnToEditMode();
+            }
+            else
+            {
+                // Fallback attempt if it's structured differently in your hierarchy
+                handler = FindObjectOfType<MazeInputHandler>();
+                if (handler != null) handler.ForceReturnToEditMode();
+            }
+        }
+        
+        Close();
     }
 
     public void Open()

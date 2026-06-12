@@ -1,28 +1,18 @@
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
-using System.Collections.Generic;
 
 public class MazeEditorMode : MonoBehaviour
 {
-    [SerializeField] private GameObject invalidSelectionMessage;
-
     private MazeInputHandler inputHandler;
     private MazeData mazeData;
     private Button[,] cellButtons;
     private int rows, cols;
     private bool isEditingWallColor = false;
-    
     private int globalMaterialIndex = -1; 
     private MazeGenerator mazeGenerator;
 
     void Start()
     {
-        if (invalidSelectionMessage != null)
-        {
-            invalidSelectionMessage.SetActive(false);
-        }
-
         var controller = GetComponentInParent<MazeEditorController>();
         mazeGenerator = controller != null ? controller.GetMazeGenerator() : null;
 
@@ -37,11 +27,13 @@ public class MazeEditorMode : MonoBehaviour
     {
         this.mazeData = mazeData;
         this.cellButtons = buttons;
-        this.rows = mazeData.rows;
-        this.cols = mazeData.columns;
+        if (mazeData != null)
+        {
+            this.rows = mazeData.rows;
+            this.cols = mazeData.columns;
+        }
     }
 
-    // 🔥 Simplified: We only need to tell the grid to refresh
     public void EnterEditStartPointMode() { } 
 
     public void ExitEditStartPointMode()
@@ -49,13 +41,10 @@ public class MazeEditorMode : MonoBehaviour
         UpdateGrid();
     }
 
-    // 🔥 This is now handled by MazeEditorController's Enum state
     public bool IsEditingStartPoint()
     {
         var controller = GetComponentInParent<MazeEditorController>();
         if (controller == null) return false;
-
-        // Returns true if either editor mode tool is currently operating the grid placement sequence
         return controller.SelectedElementType == "StartPoint" || controller.SelectedElementType == "EndPoint";
     }
 
@@ -71,6 +60,9 @@ public class MazeEditorMode : MonoBehaviour
 
     public void UpdateGrid()
     {
+        // Safety check to ensure we have valid grid configurations initialized
+        if (mazeData == null || mazeData.cells == null) return;
+
         var gridRenderer = GetComponent<MazeGridRenderer>();
         if (gridRenderer != null)
         {
@@ -99,10 +91,6 @@ public class MazeEditorMode : MonoBehaviour
 
     public enum MazeEditorMode_Enum
     {
-        View,
-        EditWalls,
-        SetStart,
-        SetEnd,
-        SetElement
+        View, EditWalls, SetStart, SetEnd, SetElement
     }
 }

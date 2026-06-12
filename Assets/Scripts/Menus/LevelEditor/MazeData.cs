@@ -10,9 +10,85 @@ public class MazeData
     public int columns;
     public CellData[,] cells;
     public List<SerializableCellData> cellsSerialized;
-    public Vector2Int start;
-    public Vector2Int end;
+    public SerializableVector2Int start;
+    public SerializableVector2Int end;
     public List<ElementData> elements = new List<ElementData>();
+
+    [Serializable]
+    public class SerializableVector2Int
+    {
+        public int x;
+        public int y;
+
+        // Constructor to easily instantiate from a Unity Vector2Int
+        public SerializableVector2Int(int x, int y)
+        {
+            this.x = x;
+            this.y = y;
+        }
+
+        // Automatically converts custom type to Unity's Vector2Int when requested
+        public static implicit operator Vector2Int(SerializableVector2Int s)
+        {
+            if (s == null) return Vector2Int.zero;
+            return new Vector2Int(s.x, s.y);
+        }
+
+        // Automatically converts Unity's Vector2Int to custom type when assigned
+        public static implicit operator SerializableVector2Int(Vector2Int v)
+        {
+            return new SerializableVector2Int(v.x, v.y);
+        }
+
+        // 🔥 FIX: Explicitly handle comparing custom type vs custom type 
+        // This resolves the ambiguous compiler matching error (CS0034)!
+        public static bool operator ==(SerializableVector2Int lhs, SerializableVector2Int rhs)
+        {
+            if (ReferenceEquals(lhs, rhs)) return true;
+            if (ReferenceEquals(lhs, null) || ReferenceEquals(rhs, null)) return false;
+            return lhs.x == rhs.x && lhs.y == rhs.y;
+        }
+
+        public static bool operator !=(SerializableVector2Int lhs, SerializableVector2Int rhs)
+        {
+            return !(lhs == rhs);
+        }
+
+        // Allows using == and != operators directly between custom type and Unity Vector2Int
+        public static bool operator ==(SerializableVector2Int lhs, Vector2Int rhs)
+        {
+            if (ReferenceEquals(lhs, null)) return false;
+            return lhs.x == rhs.x && lhs.y == rhs.y;
+        }
+
+        public static bool operator !=(SerializableVector2Int lhs, Vector2Int rhs)
+        {
+            return !(lhs == rhs);
+        }
+
+        public static bool operator ==(Vector2Int lhs, SerializableVector2Int rhs)
+        {
+            if (ReferenceEquals(rhs, null)) return false;
+            return lhs.x == rhs.x && lhs.y == rhs.y;
+        }
+
+        public static bool operator !=(Vector2Int lhs, SerializableVector2Int rhs)
+        {
+            return !(lhs == rhs);
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is Vector2Int v) return x == v.x && y == v.y;
+            if (obj is SerializableVector2Int s) return x == s.x && y == s.y;
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(x, y);
+        }
+    }
 
     public void PrepareForSerialization()
     {

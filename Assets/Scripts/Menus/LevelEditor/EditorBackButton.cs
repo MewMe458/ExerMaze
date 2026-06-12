@@ -8,6 +8,10 @@ public class EditorBackButton : MonoBehaviour
     [SerializeField] GameObject backPanel;
     [SerializeField] GameObject backConfirmPopUp;
     [SerializeField] GameObject backSavePopUp;
+    [SerializeField] Button yesBackButton;
+    [SerializeField] Button noBackButton;
+    [SerializeField] Button yesSaveButton;
+    [SerializeField] Button noSaveButton;
     [SerializeField] MazeFileHandler mazeFileHandler;
     [SerializeField] MazeEditorController mazeEditorController;
 
@@ -45,39 +49,24 @@ public class EditorBackButton : MonoBehaviour
         backButton.onClick.AddListener(OnBackButtonClicked);
 
         // Set up listeners for BackConfirmPopUp buttons
-        Button yesBackButton = backConfirmPopUp.transform.Find("BackYes")?.GetComponent<Button>();
-        Button noBackButton = backConfirmPopUp.transform.Find("BackNo")?.GetComponent<Button>();
-        if (yesBackButton == null || noBackButton == null)
-        {
-            Debug.LogError("One or both of the buttons not found in BackConfirmPopUp.");
-            return;
-        }
-        yesBackButton.onClick.AddListener(OnYesBack);
-        noBackButton.onClick.AddListener(OnNoBack);
+        if (yesBackButton != null) yesBackButton.onClick.AddListener(OnYesBack);
+        if (noBackButton != null) noBackButton.onClick.AddListener(OnNoBack);
 
         // Set up listeners for BackSavePopUp buttons
-        Button yesSaveButton = backSavePopUp.transform.Find("BackSaveYes")?.GetComponent<Button>();
-        Button noSaveButton = backSavePopUp.transform.Find("BackSaveNo")?.GetComponent<Button>();
-        if (yesSaveButton == null || noSaveButton == null)
-        {
-            Debug.LogError("One or both of the buttons not found in SaveConfirmPopUp.");
-            return;
-        }
-        yesSaveButton.onClick.AddListener(OnYesSave);
-        noSaveButton.onClick.AddListener(OnNoSave);
+        if (yesSaveButton != null) yesSaveButton.onClick.AddListener(OnYesSave);
+        if (noSaveButton != null) noSaveButton.onClick.AddListener(OnNoSave);
 
-        // Ensure pop-ups and panel are initially hidden
+        // Initially hide panels and pop-ups
+        backPanel.SetActive(false);
         backConfirmPopUp.SetActive(false);
         backSavePopUp.SetActive(false);
-        backPanel.SetActive(false);
 
-        // Subscribe to export event
+        // Hook into the maze exported event
         mazeFileHandler.OnMazeExported += OnMazeExportComplete;
     }
 
     void OnDestroy()
     {
-        // Unsubscribe to prevent memory leaks
         if (mazeFileHandler != null)
         {
             mazeFileHandler.OnMazeExported -= OnMazeExportComplete;
@@ -86,31 +75,19 @@ public class EditorBackButton : MonoBehaviour
 
     void OnBackButtonClicked()
     {
-        // Check if there's a maze generated
-        MazeData currentMazeData = mazeEditorController.GetCurrentMazeData();
-        if (currentMazeData == null)
-        {
-            Debug.Log("No maze data, navigating to Menu.");
-            SceneManager.LoadScene("Menu");
-            return;
-        }
-
-        // Show pop-ups for non-null maze
         backPanel.SetActive(true);
         backConfirmPopUp.SetActive(true);
-        backSavePopUp.SetActive(false); // Ensure second pop-up is hidden
+        backSavePopUp.SetActive(false);
     }
 
     void OnYesBack()
     {
-        // Hide first pop-up, show second pop-up
         backConfirmPopUp.SetActive(false);
         backSavePopUp.SetActive(true);
     }
 
     void OnNoBack()
     {
-        // Hide both pop-ups and panel, stay in editor
         backConfirmPopUp.SetActive(false);
         backSavePopUp.SetActive(false);
         backPanel.SetActive(false);
@@ -118,24 +95,23 @@ public class EditorBackButton : MonoBehaviour
 
     void OnYesSave()
     {
-        // Save the level using MazeFileHandler
-        MazeData currentMazeData = mazeEditorController.GetCurrentMazeData();
+        // Fix: Use .CurrentMaze instead of GetCurrentMazeData()
+        MazeData currentMazeData = mazeEditorController.CurrentMaze;
         if (currentMazeData != null)
         {
             isExporting = true;
-            mazeFileHandler.ExportMazeFile(currentMazeData); // Non-blocking
+            mazeFileHandler.ExportMazeFile(currentMazeData); 
         }
         else
         {
             Debug.LogWarning("Current maze data is null, navigating to Menu.");
-            isExporting = true; // Ensure OnMazeExportComplete processes navigation
-            OnMazeExportComplete(false); // Proceed as if export failed
+            isExporting = true; 
+            OnMazeExportComplete(false); 
         }
     }
 
     void OnNoSave()
     {
-        // Hide pop-ups and navigate to Menu without saving
         backConfirmPopUp.SetActive(false);
         backSavePopUp.SetActive(false);
         backPanel.SetActive(false);

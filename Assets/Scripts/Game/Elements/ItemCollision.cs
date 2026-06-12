@@ -3,12 +3,11 @@ using System;
 
 public class ItemCollision : MonoBehaviour
 {
-    [SerializeField] private string itemType; // Set in Unity Editor, e.g., "SpeedBoost", "Key"
+    [SerializeField] private string itemType; // Set in Unity Editor, e.g., "Bones", "Shield", "SlowPotion"
 
     // Event triggered when an item is collected
     public static event Action<string> OnItemCollected;
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         if (string.IsNullOrEmpty(itemType))
@@ -31,15 +30,30 @@ public class ItemCollision : MonoBehaviour
                 Debug.LogWarning("Item collected but itemType is not set", gameObject);
             }
 
+            // 🛠️ FIX: Robust cleanup logic for both traditional levels and Custom Level Loader instances
             if (transform.parent != null && transform.parent.CompareTag("Collectibles"))
             {
-                Destroy(transform.parent.gameObject); // Destroy parent GameObject if exist and has the correct tag
+                // Traditional level setup
+                Destroy(transform.parent.gameObject); 
+            }
+            else if (gameObject.CompareTag("LevelObject"))
+            {
+                // Custom loader base element setup
+                Destroy(gameObject);
+            }
+            else if (transform.parent != null && transform.parent.CompareTag("LevelObject"))
+            {
+                // Custom loader nested child setup (destroys the whole spawned element container)
+                Destroy(transform.parent.gameObject);
             }
             else
             {
-                Debug.LogWarning($"ItemCollision: No parent found for {gameObject.name}, destroying self", gameObject);
-                Destroy(gameObject); // Fallback to destroy self
+                // Safe absolute fallback: Destroy the local transform hierarchy root 
+                // so no orphaned floating visual effects/circles stay in the air.
+                Debug.LogWarning($"ItemCollision: Cleared object via hierarchy root fallback for {gameObject.name}");
+                Destroy(transform.root.gameObject == other.transform.root.gameObject ? gameObject : transform.root.gameObject);
             }
+
             if (SoundManager.Instance != null)
             {
                 SoundManager.Instance.PlayPickupSound(); // Play pickup sound
