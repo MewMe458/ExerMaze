@@ -130,6 +130,7 @@ public class MazeGridRenderer : MonoBehaviour
         }
 
         ResetSolutionVisibility();
+        ClearAllElements(); // 🔥 FIX 1: Clear tracking dictionary references from the previous maze
 
         this.mazeData = mazeData;
 
@@ -190,7 +191,6 @@ public class MazeGridRenderer : MonoBehaviour
                 cellButton.name = $"Cell_{currentX}_{currentY}";
                 Image cellImage = cellButton.GetComponent<Image>();
                 
-                // Assign color safely here (Text generation is skipped temporarily)
                 cellButtons[currentX, currentY] = cellButton; 
                 cellImage.sprite = GetSpriteForCell(mazeData.cells[currentX, currentY]);
                 cellImage.color = GetCellColor(currentX, currentY);
@@ -218,6 +218,15 @@ public class MazeGridRenderer : MonoBehaviour
 
         if (inputHandler != null)
             inputHandler.Initialize(mazeData, cellButtons);
+
+        // 🔥 FIX 2: Iterate through the loaded challenge elements and draw their icons
+        if (mazeData.elements != null)
+        {
+            foreach (var element in mazeData.elements)
+            {
+                DrawElement(element);
+            }
+        }
     }
 
     public void UpdateGrid(MazeData mazeData)
