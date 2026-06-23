@@ -175,7 +175,7 @@ public class CustomLevelFileHandler : MonoBehaviour
             {
                 if (invokeEvents)
                 {
-                    popUpManager?.ShowErrorPopUp("Invalid maze file format or size.");
+                    // popUpManager?.ShowErrorPopUp("Invalid maze file format or size.");
                     OnMazeLoaded?.Invoke(null);
                     OnMazeLoadedWithPath?.Invoke(null, null);
                 }

@@ -14,6 +14,14 @@ public class ItemCollision : MonoBehaviour
         {
             Debug.LogWarning($"Item type not set for {gameObject.name}", gameObject);
         }
+
+        // Double-check Collider configuration
+        Collider col = GetComponent<Collider>();
+        if (col != null && !col.isTrigger)
+        {
+            Debug.LogWarning($"ItemCollision on {gameObject.name} does NOT have 'Is Trigger' enabled! Fixing it.", gameObject);
+            col.isTrigger = true;
+        }
     }
 
     private void OnTriggerEnter(Collider other)
@@ -30,7 +38,16 @@ public class ItemCollision : MonoBehaviour
                 Debug.LogWarning("Item collected but itemType is not set", gameObject);
             }
 
-            // 🛠️ FIX: Robust cleanup logic for both traditional levels and Custom Level Loader instances
+            if (SoundManager.Instance != null)
+            {
+                SoundManager.Instance.PlayPickupSound(); // Play pickup sound
+            }
+            else
+            {
+                Debug.LogWarning("SoundManager instance not found, cannot play pickup sound");
+            }
+
+            // 🛠️ FIXED CLEANUP LOGIC: Prevents destroying the whole maze/root environment
             if (transform.parent != null && transform.parent.CompareTag("Collectibles"))
             {
                 // Traditional level setup
@@ -43,24 +60,14 @@ public class ItemCollision : MonoBehaviour
             }
             else if (transform.parent != null && transform.parent.CompareTag("LevelObject"))
             {
-                // Custom loader nested child setup (destroys the whole spawned element container)
+                // Custom loader nested child setup
                 Destroy(transform.parent.gameObject);
             }
             else
             {
-                // Safe absolute fallback: Destroy the local transform hierarchy root 
-                // so no orphaned floating visual effects/circles stay in the air.
-                Debug.LogWarning($"ItemCollision: Cleared object via hierarchy root fallback for {gameObject.name}");
-                Destroy(transform.root.gameObject == other.transform.root.gameObject ? gameObject : transform.root.gameObject);
-            }
-
-            if (SoundManager.Instance != null)
-            {
-                SoundManager.Instance.PlayPickupSound(); // Play pickup sound
-            }
-            else
-            {
-                Debug.LogWarning("SoundManager instance not found, cannot play pickup sound");
+                // SAFE FALLBACK: Only destroy this specific item, never the transform.root!
+                Debug.Log($"ItemCollision: Safely destroying individual item instance: {gameObject.name}");
+                Destroy(gameObject);
             }
         }
     }

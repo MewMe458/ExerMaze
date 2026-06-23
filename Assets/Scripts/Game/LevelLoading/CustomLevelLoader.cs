@@ -71,7 +71,7 @@ public class CustomLevelLoader : LevelLoader
         base.InstantiateLevel(mazeData);
 
         // 2. Custom Element Generation Pipeline runs via our override below
-        // InstantiateElements(mazeData);
+        InstantiateElements(mazeData); // 🔥 FIX: Uncommented this line so elements actually spawn
 
         // 3. Bake the AI navigation surface layout
         BakeNavMesh();

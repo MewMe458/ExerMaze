@@ -369,7 +369,7 @@ public abstract class LevelLoader : MonoBehaviour
             GameObject obj = Instantiate(prefab, position, prefab.transform.rotation, transform);
             Debug.Log($"Spawned {element.elementType} at [{selectedCell.Value.x},{selectedCell.Value.y}]");
 
-            if (element.elementType == "Dog" && element.detection > 0f)
+            if (element.elementType == "DogNPC" && element.detection > 0f)
             {
                 DogNPCChase dogChase = obj.GetComponent<DogNPCChase>();
                 if (dogChase != null)

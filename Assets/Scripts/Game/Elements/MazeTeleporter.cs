@@ -97,7 +97,8 @@ public class MazeTeleporter : MonoBehaviour
         {
             for (int y = 0; y < mazeData.columns; y++)
             {
-                if (mazeData.cells[x, y] != null && mazeData.cells[x, y].IsVisited)
+                // FIX: Removed the '.IsVisited' check since new custom levels start completely unvisited
+                if (mazeData.cells[x, y] != null)
                 {
                     availableCells.Add(new Vector2Int(x, y));
                 }
