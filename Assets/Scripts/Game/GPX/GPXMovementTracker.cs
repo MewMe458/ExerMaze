@@ -74,33 +74,48 @@ public class GPXMovementTracker : MonoBehaviour
         // ONLY clear if this is a brand new session start
         if (!GameManager.Instance.IsContinuingSession)
         {
+            // --- NEW SESSION ---
             characterTrackPoints.Clear();
             realLifeTrackPoints.Clear();
             stepCount = 0;
             GameManager.Instance.ClearSessionData(); // Ensure the master lists are empty
+
+            initialLatitude = GPXCoordinate.InitialLatitude;
+            initialLongitude = GPXCoordinate.InitialLongitude;
+            
+            characterLatitude = initialLatitude;
+            characterLongitude = initialLongitude;
+
+            realLifeLatitude = initialLatitude;
+            realLifeLongitude = initialLongitude;
         }
         else
         {
-            // If continuing, initialize local lists with what we already have
+            // --- CONTINUING SESSION ---
+            // Initialize local lists with what we already have in the GameManager master list
             characterTrackPoints = new List<(double, double, float, string)>(GameManager.Instance.SessionCharacterPoints);
             realLifeTrackPoints = new List<(double, double, float, string)>(GameManager.Instance.SessionRealLifePoints);
             stepCount = GameManager.Instance.AccumulatedSteps;
+
+            // Resume from the LAST known coordinates so the GPX path connects seamlessly
+            if (characterTrackPoints.Count > 0)
+            {
+                var lastChar = characterTrackPoints[characterTrackPoints.Count - 1];
+                characterLatitude = lastChar.latitude;
+                characterLongitude = lastChar.longitude;
+            }
+            if (realLifeTrackPoints.Count > 0)
+            {
+                var lastReal = realLifeTrackPoints[realLifeTrackPoints.Count - 1];
+                realLifeLatitude = lastReal.latitude;
+                realLifeLongitude = lastReal.longitude;
+            }
         }
 
-        Debug.Log("GPXMovementTracker: Resetting tracking data.");
-        characterTrackPoints.Clear();
-        realLifeTrackPoints.Clear();
-        stepCount = 0; // Reset step count for real-life tracking
+        // Set the baseline Unity position for the new scene
+        lastPosition = transform.position; 
 
-        initialLatitude = GPXCoordinate.InitialLatitude;
-        initialLongitude = GPXCoordinate.InitialLongitude;
-        characterLatitude = initialLatitude;
-        characterLongitude = initialLongitude;
-
-        realLifeLatitude = initialLatitude;
-        realLifeLongitude = initialLongitude;
-
-        lastPosition = transform.position;
+        // Add the first point of this new scene
         AddTrackPoint(characterTrackPoints, characterLatitude, characterLongitude);
         AddTrackPoint(realLifeTrackPoints, realLifeLatitude, realLifeLongitude);
     }
@@ -162,11 +177,17 @@ public class GPXMovementTracker : MonoBehaviour
         
         list.Add(point);
 
-        // ALSO update the Master List in GameManager
+        // ALSO update the Master List in GameManager safely
         if (list == characterTrackPoints)
-            GameManager.Instance.SessionCharacterPoints.Add(point);
+        {
+            if (!GameManager.Instance.SessionCharacterPoints.Contains(point))
+                GameManager.Instance.SessionCharacterPoints.Add(point);
+        }
         else
-            GameManager.Instance.SessionRealLifePoints.Add(point);
+        {
+            if (!GameManager.Instance.SessionRealLifePoints.Contains(point))
+                GameManager.Instance.SessionRealLifePoints.Add(point);
+        }
     }
 
     public string GenerateCharacterGPXData()

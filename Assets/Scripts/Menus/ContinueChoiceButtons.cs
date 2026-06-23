@@ -3,37 +3,33 @@ using UnityEngine.SceneManagement;
 
 public class ContinueChoice : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
-
     public void OnClickContinue()
     {
-        GPXDataPersistence.IsContinuingSession = true;
+        // 1. Set the continuous session flag to true
+        GameManager.Instance.IsContinuingSession = true;
+
+        // Note: Steps and Time were already accumulated in GameManager 
+        // by LevelManager.CompleteLevel() just before this screen appeared.
+
         Time.timeScale = 1f;
 
-        // ADD THESE LINES: Clear the custom level references in GameManager
+        // Clear the custom level references in GameManager
         if (GameManager.Instance != null)
         {
-            GameManager.Instance.ClearCurrentLevelName();        // [cite: 92]
-            GameManager.Instance.ClearCurrentCustomLevelPath();  // [cite: 93]
+            GameManager.Instance.ClearCurrentLevelName();        
+            GameManager.Instance.ClearCurrentCustomLevelPath();  
         }
 
-        // Now load the RandomLevel scene
-        SceneManager.LoadScene("RandomLevel"); // [cite: 77]
+        // Load the RandomLevel scene again
+        SceneManager.LoadScene("RandomLevel"); 
     }
 
     public void OnClickStop()
     {
-        // Finally show the summary screen
+        // 2. Explicitly tell GameManager the session is over
+        GameManager.Instance.IsContinuingSession = false;
+
+        // Unload this prompt and show the final summary screen
         SceneManager.UnloadSceneAsync("ContinueChoiceScene");
         SceneManager.LoadScene("LevelCompleteMenu", LoadSceneMode.Additive); 
     }

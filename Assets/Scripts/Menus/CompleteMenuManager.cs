@@ -22,24 +22,21 @@ public class CompleteMenuManager : BaseMenuManager
             return;
         }
 
-        LevelManager levelManager = FindFirstObjectByType<LevelManager>();
-
-        if (levelManager != null && finalScoreText != null)
+        // 1. Fetch Accumulated Score
+        if (finalScoreText != null)
         {
-            finalScoreText.text = levelManager.GetFinalScore().ToString();
-        }
-        else
-        {
-            Debug.LogWarning("CompleteMenuManager: LevelManager or finalScoreText not found");
-            if (finalScoreText != null) finalScoreText.text = "N/A";
+            finalScoreText.text = GPXDataPersistence.TotalScoreAccumulated.ToString();
         }
 
-        if (levelManager != null && finalTimeText != null)
+        // 2. Fetch Accumulated Time
+        if (finalTimeText != null)
         {
-            float elapsedTime = levelManager.GetFinalTime();
+            float elapsedTime = GameManager.Instance != null ? GameManager.Instance.AccumulatedTime : 0f;
+            
             int hours = Mathf.FloorToInt(elapsedTime / 3600f);
             int minutes = Mathf.FloorToInt((elapsedTime % 3600f) / 60f);
             int seconds = Mathf.FloorToInt(elapsedTime % 60f);
+            
             if (hours >= 1)
             {
                 finalTimeText.text = string.Format("{0}:{1:00}:{2:00}", hours, minutes, seconds);
@@ -49,21 +46,12 @@ public class CompleteMenuManager : BaseMenuManager
                 finalTimeText.text = string.Format("{0}:{1:00}", minutes, seconds);
             }
         }
-        else
-        {
-            Debug.LogWarning("CompleteMenuManager: LevelManager or finalTimeText not found");
-            if (finalTimeText != null) finalTimeText.text = "N/A";
-        }
 
-        if (levelManager != null && finalScoreText != null)
+        // 3. Fetch Accumulated Steps
+        if (finalStepCountText != null)
         {
-            int finalSteps = levelManager.GetFinalStepCount();
+            int finalSteps = GameManager.Instance != null ? GameManager.Instance.AccumulatedSteps : 0;
             finalStepCountText.text = finalSteps.ToString();
-        }
-        else
-        {
-            Debug.LogWarning("CompleteMenuManager: LevelManager or finalScoreText not found");
-            if (finalTimeText != null) finalScoreText.text = "N/A";
         }
     }
 }
