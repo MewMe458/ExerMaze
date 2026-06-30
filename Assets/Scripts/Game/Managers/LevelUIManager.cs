@@ -13,14 +13,14 @@ public class LevelUIManager : MonoBehaviour
     [SerializeField] private TMP_Text timerText;
 
     #region Challenge UI
-    [SerializeField] private GameObject challengeUI; // Renamed from challengeIconPanel
-    [SerializeField] private GameObject iconHolder; // Child with GridLayoutGroup
-    [SerializeField] private GameObject dogChaseIconPrefab; // Prefab for Dog Chase
-    [SerializeField] private GameObject dogBiteIconPrefab; // Prefab for Dog Bite
-    [SerializeField] private GameObject dogTamedIconPrefab; // Prefab for Dog Tamed
-    [SerializeField] private GameObject bonesIconPrefab; // Prefab for Bones
-    [SerializeField] private GameObject shieldIconPrefab; // Prefab for Shield
-    [SerializeField] private GameObject hintIconPrefab; // Prefab for Hint
+    [SerializeField] private GameObject challengeUI; 
+    [SerializeField] private GameObject iconHolder; 
+    [SerializeField] private GameObject dogChaseIconPrefab; 
+    [SerializeField] private GameObject dogBiteIconPrefab; 
+    [SerializeField] private GameObject dogTamedIconPrefab; 
+    [SerializeField] private GameObject bonesIconPrefab; 
+    [SerializeField] private GameObject shieldIconPrefab; 
+    [SerializeField] private GameObject hintIconPrefab; 
     private GameObject dogChaseIconInstance;
     private GameObject dogBiteIconInstance;
     private GameObject dogTamedIconInstance;
@@ -33,7 +33,7 @@ public class LevelUIManager : MonoBehaviour
     private bool isBonesIconInstantiated;
     private bool isShieldIconInstantiated;
     private bool isHintIconInstantiated;
-    [SerializeField] private GameObject levelMessageText; // Parent GameObject with Image and TMP_Text child
+    [SerializeField] private GameObject levelMessageText; 
     #endregion
 
     private CanvasGroup messageCanvasGroup;
@@ -81,11 +81,6 @@ public class LevelUIManager : MonoBehaviour
         if (timer == null) Debug.LogError("LevelUIManager: Timer not found in scene");
     }
 
-    private void Start()
-    {
-        // Moved to InitializeUI()
-    }
-
     private void OnDestroy()
     {
         if (shieldPowerUp != null)
@@ -103,28 +98,9 @@ public class LevelUIManager : MonoBehaviour
 
         if (goalMarker != null)
         {
-            goalMarker.OnHintActivated -= () =>
-            {
-                if (!isHintIconInstantiated)
-                {
-                    hintIconInstance = Instantiate(hintIconPrefab, iconHolder.transform);
-                    isHintIconInstantiated = true;
-                    LayoutRebuilder.ForceRebuildLayoutImmediate(iconHolder.GetComponent<RectTransform>());
-                    Debug.Log("Instantiated HintIcon");
-                }
-                UpdateHintStatus(goalMarker != null ? 5f : 0f);
-            };
+            goalMarker.OnHintActivated -= HandleHintRegistration;
             goalMarker.OnHintTick -= UpdateHintStatus;
-            goalMarker.OnHintDeactivated -= () =>
-            {
-                if (hintIconInstance != null)
-                {
-                    Destroy(hintIconInstance);
-                    hintIconInstance = null;
-                    isHintIconInstantiated = false;
-                    Debug.Log("Hint UI destroyed");
-                }
-            };
+            goalMarker.OnHintDeactivated -= HandleHintDeactivation;
         }
     }
 
@@ -184,36 +160,36 @@ public class LevelUIManager : MonoBehaviour
 
         if (goalMarker != null)
         {
-            goalMarker.OnHintActivated += () =>
-            {
-                if (!isHintIconInstantiated)
-                {
-                    hintIconInstance = Instantiate(hintIconPrefab, iconHolder.transform);
-                    isHintIconInstantiated = true;
-                    LayoutRebuilder.ForceRebuildLayoutImmediate(iconHolder.GetComponent<RectTransform>());
-                    Debug.Log("Instantiated HintIcon");
-                }
-                UpdateHintStatus(goalMarker != null ? 5f : 0f);
-            };
+            goalMarker.OnHintActivated += HandleHintRegistration;
             goalMarker.OnHintTick += UpdateHintStatus;
-            goalMarker.OnHintDeactivated += () =>
-            {
-                if (hintIconInstance != null)
-                {
-                    Destroy(hintIconInstance);
-                    hintIconInstance = null;
-                    isHintIconInstantiated = false;
-                    Debug.Log("Hint UI destroyed");
-                }
-            };
+            goalMarker.OnHintDeactivated += HandleHintDeactivation;
         }
 
-        SpecialItem specialItem = FindAnyObjectByType<SpecialItem>();
-        if (specialItem != null)
-        {
-            specialItem.OnSpecialItemEffect += ShowLevelMessage;
-        }
+        // REMOVED: Broken SpecialItem lookups and event attachments are safely handled directly from the item now.
         levelMessageText?.SetActive(false);
+    }
+
+    private void HandleHintRegistration()
+    {
+        if (!isHintIconInstantiated)
+        {
+            hintIconInstance = Instantiate(hintIconPrefab, iconHolder.transform);
+            isHintIconInstantiated = true;
+            LayoutRebuilder.ForceRebuildLayoutImmediate(iconHolder.GetComponent<RectTransform>());
+            Debug.Log("Instantiated HintIcon");
+        }
+        UpdateHintStatus(goalMarker != null ? 5f : 0f);
+    }
+
+    private void HandleHintDeactivation()
+    {
+        if (hintIconInstance != null)
+        {
+            Destroy(hintIconInstance);
+            hintIconInstance = null;
+            isHintIconInstantiated = false;
+            Debug.Log("Hint UI destroyed");
+        }
     }
 
     public void ShowBluetoothConnectCheckUI()
@@ -221,7 +197,6 @@ public class LevelUIManager : MonoBehaviour
         if (bluetoothCheckUI != null)
         {
             bluetoothCheckUI.SetActive(true);
-            Debug.Log("LevelUIManager: Showing Bluetooth not connected message");
         }
     }
 
@@ -230,7 +205,6 @@ public class LevelUIManager : MonoBehaviour
         if (bluetoothCheckUI != null)
         {
             bluetoothCheckUI.SetActive(false);
-            Debug.Log("LevelUIManager: Hiding Bluetooth not connected message");
         }
     }
 
@@ -239,19 +213,14 @@ public class LevelUIManager : MonoBehaviour
         if (countdownText != null)
         {
             countdownText.gameObject.SetActive(true);
-            Debug.Log("LevelUIManager: Countdown started, showing '3'");
             countdownText.text = "3";
             yield return new WaitForSecondsRealtime(1f);
-            Debug.Log("LevelUIManager: Countdown showing '2'");
             countdownText.text = "2";
             yield return new WaitForSecondsRealtime(1f);
-            Debug.Log("LevelUIManager: Countdown showing '1'");
             countdownText.text = "1";
             yield return new WaitForSecondsRealtime(1f);
-            Debug.Log("LevelUIManager: Countdown showing 'Go!'");
             countdownText.text = "Go!";
             yield return new WaitForSecondsRealtime(0.5f);
-            Debug.Log("LevelUIManager: Countdown finished, hiding text");
             countdownText.gameObject.SetActive(false);
         }
     }
@@ -271,16 +240,11 @@ public class LevelUIManager : MonoBehaviour
             dogChaseIconInstance = Instantiate(dogChaseIconPrefab, iconHolder.transform);
             isDogChaseIconInstantiated = true;
             LayoutRebuilder.ForceRebuildLayoutImmediate(iconHolder.GetComponent<RectTransform>());
-            Debug.Log("Instantiated DogChaseIcon");
         }
         if (dogChaseIconInstance != null)
         {
             TMP_Text textComponent = dogChaseIconInstance.GetComponentInChildren<TMP_Text>();
-            if (textComponent != null)
-            {
-                textComponent.text = count.ToString();
-                Debug.Log($"Dog chase count UI updated to {count}");
-            }
+            if (textComponent != null) textComponent.text = count.ToString();
         }
     }
 
@@ -290,16 +254,11 @@ public class LevelUIManager : MonoBehaviour
         {
             dogBiteIconInstance = Instantiate(dogBiteIconPrefab, iconHolder.transform);
             isDogBiteIconInstantiated = true;
-            Debug.Log("Instantiated DogBiteIcon");
         }
         if (dogBiteIconInstance != null)
         {
             TMP_Text textComponent = dogBiteIconInstance.GetComponentInChildren<TMP_Text>();
-            if (textComponent != null)
-            {
-                textComponent.text = count.ToString();
-                Debug.Log($"Dog bite count UI updated to {count}");
-            }
+            if (textComponent != null) textComponent.text = count.ToString();
         }
     }
 
@@ -309,16 +268,11 @@ public class LevelUIManager : MonoBehaviour
         {
             dogTamedIconInstance = Instantiate(dogTamedIconPrefab, iconHolder.transform);
             isDogTamedIconInstantiated = true;
-            Debug.Log("Instantiated DogTamedIcon");
         }
         if (dogTamedIconInstance != null)
         {
             TMP_Text textComponent = dogTamedIconInstance.GetComponentInChildren<TMP_Text>();
-            if (textComponent != null)
-            {
-                textComponent.text = count.ToString();
-                Debug.Log($"Dog tamed count UI updated to {count}");
-            }
+            if (textComponent != null) textComponent.text = count.ToString();
         }
     }
 
@@ -327,11 +281,7 @@ public class LevelUIManager : MonoBehaviour
         if (bonesIconInstance != null)
         {
             TMP_Text textComponent = bonesIconInstance.GetComponentInChildren<TMP_Text>();
-            if (textComponent != null)
-            {
-                textComponent.text = count.ToString();
-                Debug.Log($"Bones count UI updated to {count}");
-            }
+            if (textComponent != null) textComponent.text = count.ToString();
         }
     }
 
@@ -345,7 +295,6 @@ public class LevelUIManager : MonoBehaviour
                 int minutes = Mathf.FloorToInt(remainingTime / 60f);
                 int seconds = Mathf.FloorToInt(remainingTime % 60f);
                 textComponent.text = $"{minutes:00}:{seconds:00}";
-                Debug.Log($"Shield time updated to {minutes:00}:{seconds:00}");
             }
         }
     }
@@ -362,7 +311,6 @@ public class LevelUIManager : MonoBehaviour
             Destroy(shieldIconInstance);
             shieldIconInstance = null;
             isShieldIconInstantiated = false;
-            Debug.Log("Shield UI destroyed");
         }
     }
 
@@ -376,7 +324,6 @@ public class LevelUIManager : MonoBehaviour
                 int minutes = Mathf.FloorToInt(remainingTime / 60f);
                 int seconds = Mathf.FloorToInt(remainingTime % 60f);
                 textComponent.text = $"{minutes:00}:{seconds:00}";
-                Debug.Log($"Hint time updated to {minutes:00}:{seconds:00}");
             }
         }
     }
@@ -390,7 +337,6 @@ public class LevelUIManager : MonoBehaviour
             {
                 bonesIconInstance = Instantiate(bonesIconPrefab, iconHolder.transform);
                 isBonesIconInstantiated = true;
-                Debug.Log("Instantiated BonesIcon");
             }
             UpdateBonesCount(count);
         }
@@ -462,7 +408,6 @@ public class LevelUIManager : MonoBehaviour
         if (challengeUI != null)
         {
             challengeUI.SetActive(isVisible);
-            Debug.Log($"ChallengeUI set to {(isVisible ? "visible" : "hidden")}");
         }
     }
 }

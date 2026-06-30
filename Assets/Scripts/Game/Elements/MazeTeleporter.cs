@@ -13,6 +13,9 @@ public class MazeTeleporter : MonoBehaviour
     private AutoMG3D_1010 randomMazeManager;
     private LevelLoader customLevelLoader;
 
+    // Static tracker shared across all teleporters to manage the 5-second cooldown global lock
+    private static float globalCooldownEndTime = 0f;
+
     private void Awake()
     {
         // Scan dynamically for whichever level generation system is running in the current scene
@@ -37,6 +40,13 @@ public class MazeTeleporter : MonoBehaviour
         if (!other.CompareTag("Player"))
             return;
 
+        // Check if the system is currently under a cooldown lock
+        if (Time.time < globalCooldownEndTime)
+        {
+            Debug.Log("MazeTeleporter: Teleporters are on cooldown.");
+            return;
+        }
+
         CharacterController controller = other.GetComponent<CharacterController>();
         if (controller == null)
             return;
@@ -53,28 +63,62 @@ public class MazeTeleporter : MonoBehaviour
         if (teleportEffect != null) teleportEffect.SetActive(true);
         if (teleportSound != null) teleportSound.Play();
 
+        // Find all teleporters currently active in the maze scene
+        MazeTeleporter[] allTeleporters = Object.FindObjectsByType<MazeTeleporter>(FindObjectsSortMode.None);
+
+        // If multiple teleporters exist, initiate the 5-second cooldown immediately 
+        // to prevent immediate re-triggering upon arriving at the destination teleporter
+        if (allTeleporters.Length >= 2)
+        {
+            globalCooldownEndTime = Time.time + teleportDelay + 5.0f;
+        }
+
         // Wait for effect buildup
         yield return new WaitForSeconds(teleportDelay);
 
         Vector3 targetPos = transform.position; // Fallback to current spot if everything fails
 
-        // Choose destination calculation path depending on the scene type running
-        if (randomMazeManager != null)
+        // ─── CASE 1: MULTIPLE TELEPORTERS PRESENT ──────────────────────────────────────
+        if (allTeleporters.Length >= 2)
         {
-            // Random Level Scene Mode
-            targetPos = randomMazeManager.GetRandomCellWorldPosition(avoidCenterRoom);
+            // Gather all other teleporters except this one
+            List<MazeTeleporter> destinationOptions = new List<MazeTeleporter>();
+            foreach (MazeTeleporter tp in allTeleporters)
+            {
+                if (tp != this)
+                {
+                    destinationOptions.Add(tp);
+                }
+            }
+
+            if (destinationOptions.Count > 0)
+            {
+                // Select a random destination teleporter from the list
+                MazeTeleporter targetTeleporter = destinationOptions[Random.Range(0, destinationOptions.Count)];
+                targetPos = targetTeleporter.transform.position;
+            }
         }
-        else if (customLevelLoader != null && customLevelLoader.CurrentMazeData != null)
-        {
-            // Custom Level Scene Mode
-            targetPos = GetRandomCustomCellWorldPosition(customLevelLoader.CurrentMazeData);
-            
-            // 🛠️ FIX: Ensure that the player is teleported to the correct ground height (compensating for the lowered teleporter position)
-            targetPos.y = playerTransform.position.y; 
-        }
+        // ─── CASE 2: SINGLE TELEPORTER (ORIGINAL MAZE CELL LOGIC) ──────────────────────
         else
         {
-            Debug.LogWarning("MazeTeleporter: No level manager found in the scene to calculate destination.");
+            // Choose destination calculation path depending on the scene type running
+            if (randomMazeManager != null)
+            {
+                // Random Level Scene Mode
+                targetPos = randomMazeManager.GetRandomCellWorldPosition(avoidCenterRoom);
+            }
+            else if (customLevelLoader != null && customLevelLoader.CurrentMazeData != null)
+            {
+                // Custom Level Scene Mode
+                targetPos = GetRandomCustomCellWorldPosition(customLevelLoader.CurrentMazeData);
+                
+                // 🛠️ FIX: Ensure that the player is teleported to the correct ground height (compensating for the lowered teleporter position)
+                targetPos.y = playerTransform.position.y; 
+            }
+            else
+            {
+                Debug.LogWarning("MazeTeleporter: No level manager found in the scene to calculate destination.");
+            }
         }
 
         targetPos.y += yOffset;

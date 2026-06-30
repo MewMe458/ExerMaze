@@ -4681,8 +4681,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 994495772}
   m_HandleRect: {fileID: 994495771}
   m_Direction: 2
-  m_Value: 1.0000001
-  m_Size: 0.40404043
+  m_Value: 1
+  m_Size: 0.40404037
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -14423,163 +14423,163 @@ MonoBehaviour:
   wallMaterials:
   - materialName: Brick Wall
     material: {fileID: 2100000, guid: 3e67885f9dec75b4682e7d8355fc8617, type: 2}
-    previewSprite: {fileID: 0}
+    previewSprite: {fileID: 21300000, guid: 75ce08fc0d867b5418144dfc36ed1dce, type: 3}
     previewColor: {r: 0.83921576, g: 0.6039216, b: 0.48235297, a: 1}
   - materialName: Wall 1
     material: {fileID: 2100000, guid: 265eae0d2902912469a23f210c6f820a, type: 2}
-    previewSprite: {fileID: 0}
+    previewSprite: {fileID: 21300000, guid: a671d53688251c042a44120f970bd300, type: 3}
     previewColor: {r: 0.8705883, g: 0.6862745, b: 0.6784314, a: 1}
   - materialName: Wall 2
     material: {fileID: 2100000, guid: ba50f6747b0fb174dbff66276705a4b5, type: 2}
-    previewSprite: {fileID: 0}
+    previewSprite: {fileID: 21300000, guid: efe04cfd5d70bfe41a0280776a1b74d8, type: 3}
     previewColor: {r: 0.909804, g: 0.47450984, b: 0.9803922, a: 1}
   - materialName: Wall 3
     material: {fileID: 2100000, guid: 01bd690ba7dd0ae428c88b396ea4afec, type: 2}
-    previewSprite: {fileID: 0}
+    previewSprite: {fileID: 21300000, guid: f5a221eef62c0b741bc3b5a585fca14a, type: 3}
     previewColor: {r: 0.8078432, g: 0.81568635, b: 0.4784314, a: 1}
   - materialName: Wall 4
     material: {fileID: 2100000, guid: 6b6e3de4a37bed44784b5f2ba2d8dfa3, type: 2}
-    previewSprite: {fileID: 0}
+    previewSprite: {fileID: 21300000, guid: 105dbe43d36a306479703671f2449306, type: 3}
     previewColor: {r: 0.3019608, g: 0.6745098, b: 0.54901963, a: 1}
   - materialName: Wall 5
     material: {fileID: 2100000, guid: 13d7f150862a07f48ad503d1b78e1d93, type: 2}
-    previewSprite: {fileID: 0}
+    previewSprite: {fileID: 21300000, guid: c75f34e16f5986b4a9277559bc4d8fbb, type: 3}
     previewColor: {r: 0.9058824, g: 0.9686275, b: 0.09411766, a: 1}
   - materialName: Wall 6
     material: {fileID: 2100000, guid: 450a85a03b768724c82aa14e096189d1, type: 2}
-    previewSprite: {fileID: 0}
+    previewSprite: {fileID: 21300000, guid: 4af2d8cc704515b4eba11fd6709c1414, type: 3}
     previewColor: {r: 0.40784317, g: 0.6666667, b: 0.64705884, a: 1}
   - materialName: Wall 7
     material: {fileID: 2100000, guid: 3f35ecd8b6da37f498c4333ef27d9a17, type: 2}
-    previewSprite: {fileID: 0}
+    previewSprite: {fileID: 21300000, guid: cbbc5f3f590c2ae4a8ecf5958bec6a83, type: 3}
     previewColor: {r: 0.43921572, g: 0.60784316, b: 0.5254902, a: 1}
   - materialName: Wall 8
     material: {fileID: 2100000, guid: 944e8ae80904a504290b8b248b32fead, type: 2}
-    previewSprite: {fileID: 0}
+    previewSprite: {fileID: 21300000, guid: dd903d4af68722a499f32bfaa5d72bfd, type: 3}
     previewColor: {r: 0.3254902, g: 0.14901961, b: 0.30588236, a: 1}
   - materialName: Wall 9
     material: {fileID: 2100000, guid: 0cef73917892ab84fb38ceb784e458e4, type: 2}
-    previewSprite: {fileID: 0}
+    previewSprite: {fileID: 21300000, guid: 1b9e25487ff2ed740860d7d8a83844bd, type: 3}
     previewColor: {r: 0.48627454, g: 0.5019608, b: 0.48627454, a: 1}
   - materialName: Wall 10
     material: {fileID: 2100000, guid: bf848302394d3c547bb66aa2740a41e4, type: 2}
-    previewSprite: {fileID: 0}
+    previewSprite: {fileID: 21300000, guid: 767731caf2505744188a091a12bc3354, type: 3}
     previewColor: {r: 0.73333335, g: 0.9568628, b: 0.9921569, a: 1}
   - materialName: Wal 11
     material: {fileID: 2100000, guid: bfdeb0ad48e42a1478c3f2955694d561, type: 2}
-    previewSprite: {fileID: 0}
+    previewSprite: {fileID: 21300000, guid: 6adae4c58a8eab84ea738db3290c3061, type: 3}
     previewColor: {r: 0.7843138, g: 0.24705884, b: 0.5254902, a: 1}
   - materialName: Wall 12
     material: {fileID: 2100000, guid: 779cbb36446ca194dbaae5808da2088a, type: 2}
-    previewSprite: {fileID: 0}
+    previewSprite: {fileID: 21300000, guid: e86d241603669e74dac3c0a57f27b2ad, type: 3}
     previewColor: {r: 0.16078432, g: 0.68235296, b: 0.8705883, a: 1}
   - materialName: Wall 13
     material: {fileID: 2100000, guid: 4c813ee474998c348beca773d22119c4, type: 2}
-    previewSprite: {fileID: 0}
+    previewSprite: {fileID: 21300000, guid: 9dfd5b73b6be7e94ba830a641f2f6634, type: 3}
     previewColor: {r: 0.7058824, g: 0.9294118, b: 0.8980393, a: 1}
   - materialName: Wall 14
     material: {fileID: 2100000, guid: 62c30c565a3eba74ba6df8f6c956b831, type: 2}
-    previewSprite: {fileID: 0}
+    previewSprite: {fileID: 21300000, guid: e6afc7aab9435484983a4dac9f7ec749, type: 3}
     previewColor: {r: 0.9568628, g: 0.98823535, b: 0.9921569, a: 1}
   - materialName: Wall 15
     material: {fileID: 2100000, guid: 7cd51917f6e328d45b8e3000c7d55741, type: 2}
-    previewSprite: {fileID: 0}
+    previewSprite: {fileID: 21300000, guid: d6c99db3937ea4e41ab7b8d62b02eee0, type: 3}
     previewColor: {r: 0.6156863, g: 0.6862745, b: 0.2627451, a: 1}
   - materialName: Wall 16
     material: {fileID: 2100000, guid: 06e8b9328afaf4e41b1aedd198bb2526, type: 2}
-    previewSprite: {fileID: 0}
+    previewSprite: {fileID: 21300000, guid: 3554339cd4c705741bd92dc0c0feb93c, type: 3}
     previewColor: {r: 0.1254902, g: 0.3019608, b: 0.3529412, a: 1}
   - materialName: Wall 17
     material: {fileID: 2100000, guid: c370b847df1f82d4ca26822023da1ca0, type: 2}
-    previewSprite: {fileID: 0}
+    previewSprite: {fileID: 21300000, guid: 068616886a2389847b0c116666bf1dc2, type: 3}
     previewColor: {r: 0.0627451, g: 0.20392159, b: 0.12941177, a: 1}
   - materialName: Wall 18
     material: {fileID: 2100000, guid: 41a608291f279c84085f45c168f5b2c9, type: 2}
-    previewSprite: {fileID: 0}
+    previewSprite: {fileID: 21300000, guid: 4a3ffa4e2a945d2468504a4815220a42, type: 3}
     previewColor: {r: 0.93725497, g: 0.95294124, b: 0.9686275, a: 1}
   - materialName: Wall 19
     material: {fileID: 2100000, guid: 9833ed36923365a41be95380f70456be, type: 2}
-    previewSprite: {fileID: 0}
+    previewSprite: {fileID: 21300000, guid: ae57582062ce4c246ad5f9ac62e0ed9e, type: 3}
     previewColor: {r: 0.8705883, g: 0.7803922, b: 0.93725497, a: 1}
   - materialName: Wall 20
     material: {fileID: 2100000, guid: 0d22caaabe4c3494daf8cd2a7d5fb7c4, type: 2}
-    previewSprite: {fileID: 0}
+    previewSprite: {fileID: 21300000, guid: abfa781a594c6624a8170f12a0893039, type: 3}
     previewColor: {r: 0.92549026, g: 0.21568629, b: 0.8941177, a: 1}
   - materialName: Wall 21
     material: {fileID: 2100000, guid: e9e18c9e97186ac43a785e68623867b6, type: 2}
-    previewSprite: {fileID: 0}
+    previewSprite: {fileID: 21300000, guid: 3827e59711cb9f246b9f8d3f81c21999, type: 3}
     previewColor: {r: 0.17254902, g: 0.2392157, b: 0.83921576, a: 1}
   - materialName: Wall 22
     material: {fileID: 2100000, guid: ba98d2703849b8f43ba6909f93bdb8ee, type: 2}
-    previewSprite: {fileID: 0}
+    previewSprite: {fileID: 21300000, guid: 6592130f59fb61d47a6378766792820b, type: 3}
     previewColor: {r: 0.37647063, g: 0.5372549, b: 0.19215688, a: 1}
   - materialName: Wall 23
     material: {fileID: 2100000, guid: ae830899fff424646a89b330c2155f26, type: 2}
-    previewSprite: {fileID: 0}
+    previewSprite: {fileID: 21300000, guid: 8bc280c9794283c449c183db5d2092d1, type: 3}
     previewColor: {r: 0.92549026, g: 0.7960785, b: 0.8941177, a: 1}
   - materialName: Wall 24
     material: {fileID: 2100000, guid: e147960297a8ec745bf7f206a3dbbe1f, type: 2}
-    previewSprite: {fileID: 0}
+    previewSprite: {fileID: 21300000, guid: 83489d1054a5e1046a51998ffc1cb720, type: 3}
     previewColor: {r: 0.5803922, g: 0.8980393, b: 1, a: 1}
   - materialName: Wall 25
     material: {fileID: 2100000, guid: 7b1fbd5363c87424f9768d0662b8717d, type: 2}
-    previewSprite: {fileID: 0}
+    previewSprite: {fileID: 21300000, guid: 187418c932e284e449265cd8f2c8df1d, type: 3}
     previewColor: {r: 0.8078432, g: 0.9607844, b: 0.9803922, a: 1}
   - materialName: Wall 26
     material: {fileID: 2100000, guid: 655c40748ac9b964abc4b116a7bd983a, type: 2}
-    previewSprite: {fileID: 0}
+    previewSprite: {fileID: 21300000, guid: b4a10bda36c013a4083fe18070cf7d01, type: 3}
     previewColor: {r: 0.9058824, g: 0.63529414, b: 0.16078432, a: 1}
   - materialName: Wall 27
     material: {fileID: 2100000, guid: 3a4405979e643f24fbcaa0972d197602, type: 2}
-    previewSprite: {fileID: 0}
+    previewSprite: {fileID: 21300000, guid: fd3aa9463d4342a47b25ebf77791e3ba, type: 3}
     previewColor: {r: 0.90196085, g: 0.86666673, b: 0.9607844, a: 1}
   - materialName: Wall 28
     material: {fileID: 2100000, guid: 8baf242319726d044a7873d3d873275b, type: 2}
-    previewSprite: {fileID: 0}
+    previewSprite: {fileID: 21300000, guid: cb3c11080ce5bbd44b87320edd880e40, type: 3}
     previewColor: {r: 0.3803922, g: 0.68235296, b: 0.48627454, a: 1}
   - materialName: Wall 29
     material: {fileID: 2100000, guid: f17e293ba3d08544c8912b758a495651, type: 2}
-    previewSprite: {fileID: 0}
+    previewSprite: {fileID: 21300000, guid: 58546efa9993eef4da2fa7987009325f, type: 3}
     previewColor: {r: 0.8705883, g: 0.7490196, b: 0.454902, a: 1}
   - materialName: Wall 30
     material: {fileID: 2100000, guid: 8ab63664a0ea42e42a533afc71669df5, type: 2}
-    previewSprite: {fileID: 0}
+    previewSprite: {fileID: 21300000, guid: 222efbcde0c20a241bdfad9c21814053, type: 3}
     previewColor: {r: 0.5921569, g: 1, b: 0.81568635, a: 1}
   - materialName: Wall 31
     material: {fileID: 2100000, guid: 93ea2596700053c439727e747be2c0c2, type: 2}
-    previewSprite: {fileID: 0}
+    previewSprite: {fileID: 21300000, guid: e46b4a4652f2fcd469ce67af8595ead8, type: 3}
     previewColor: {r: 0.3372549, g: 0.24705884, b: 0.1764706, a: 1}
   - materialName: Wall 32
     material: {fileID: 2100000, guid: 21e66b76df30c3341af958739f1b3f4d, type: 2}
-    previewSprite: {fileID: 0}
+    previewSprite: {fileID: 21300000, guid: 46bddc5497605b24ea2feec29890b03a, type: 3}
     previewColor: {r: 0.30980393, g: 0.7568628, b: 0.29803923, a: 1}
   - materialName: Wall 33
     material: {fileID: 2100000, guid: a298bdb03af793147a58aeb79f8a6b8d, type: 2}
-    previewSprite: {fileID: 0}
+    previewSprite: {fileID: 21300000, guid: 01ab71e2712821840b7c661c745a9d46, type: 3}
     previewColor: {r: 0.73333335, g: 0.94117653, b: 0.73333335, a: 1}
   - materialName: Wall 34
     material: {fileID: 2100000, guid: e6168f7fd2044844ba8e73c0522eb418, type: 2}
-    previewSprite: {fileID: 0}
+    previewSprite: {fileID: 21300000, guid: 2800ad8322c29e94abd086ff3b66f80e, type: 3}
     previewColor: {r: 1, g: 0.93725497, b: 0.64705884, a: 1}
   - materialName: Wall 35
     material: {fileID: 2100000, guid: 92ac60781d5937b41811072b9498f747, type: 2}
-    previewSprite: {fileID: 0}
+    previewSprite: {fileID: 21300000, guid: ac644a042631a5b4fa02d3597e1a5ecd, type: 3}
     previewColor: {r: 0.41960788, g: 0.9215687, b: 0.9058824, a: 1}
   - materialName: Wall 36
     material: {fileID: 2100000, guid: db5ba8273d01f594db0b233b5742117c, type: 2}
-    previewSprite: {fileID: 0}
+    previewSprite: {fileID: 21300000, guid: c048b2db96c38b740b778df71f32e7d2, type: 3}
     previewColor: {r: 0.83921576, g: 0.1764706, b: 0.92549026, a: 1}
   - materialName: Wall 37
     material: {fileID: 2100000, guid: bcae2f73ecc3aff40aa6af406a08f63a, type: 2}
-    previewSprite: {fileID: 0}
+    previewSprite: {fileID: 21300000, guid: e5eeb8eaaf0c528418a2cabe36c083e6, type: 3}
     previewColor: {r: 0.39607847, g: 0.46274513, b: 0.20392159, a: 1}
   - materialName: Wall 38
     material: {fileID: 2100000, guid: 53cd480815943fa45a7eae6fdf6c0580, type: 2}
-    previewSprite: {fileID: 0}
+    previewSprite: {fileID: 21300000, guid: dd2f4521f4f96d943a94537386cc8ba4, type: 3}
     previewColor: {r: 0.8000001, g: 0.24705884, b: 0.61960787, a: 1}
   - materialName: Wall 39
     material: {fileID: 2100000, guid: 70ab35f6ff4fea642bff9eecaa16b71c, type: 2}
-    previewSprite: {fileID: 0}
+    previewSprite: {fileID: 21300000, guid: 536bb0452ecd12e46b9ac865a8f5333a, type: 3}
     previewColor: {r: 0.28235295, g: 0.454902, b: 1, a: 1}
   dogNPCPrefab: {fileID: 6192282244647998859, guid: eaf1b368edb1fe04691fb372fe91a9c9, type: 3}
   bonePrefab: {fileID: 662260492618992360, guid: 2586f7b94f795dc46abcb7ddda6f9e2a, type: 3}

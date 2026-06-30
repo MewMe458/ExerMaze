@@ -13,12 +13,19 @@ public class ScreenshotManager : MonoBehaviour
 {
     public static ScreenshotManager Instance { get; private set; }
 
-    private const string DIRECTORY_KEY = "ScreenshotDirectory"; // Match SettingsManager
-    private const string FOLDER_TOKEN_KEY = "ScreenshotFolderToken"; // Match SettingsManager
-    private string defaultDirectory; // Default folder path
+    private const string DIRECTORY_KEY = "ScreenshotDirectory"; 
+    private const string FOLDER_TOKEN_KEY = "ScreenshotFolderToken"; 
+    private string defaultDirectory; 
+    
+    // Tracks the current target folder for taking screenshots
     private string screenshotFolder = "Screenshots";
+    
+    // Tracks the absolute root directory chosen by the user
+    private string baseScreenshotFolder = "Screenshots";
+
 #if ENABLE_WINMD_SUPPORT
-    private StorageFolder screenshotStorageFolder; // Store the StorageFolder for UWP
+    private StorageFolder screenshotStorageFolder; 
+    private StorageFolder baseStorageFolder;
 #endif
 
     private void Awake()
@@ -26,18 +33,27 @@ public class ScreenshotManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject); // Persist across scenes
+            DontDestroyOnLoad(gameObject); 
         }
         else
         {
-            Destroy(gameObject); // Ensure only one instance exists
+            Destroy(gameObject); 
+            return;
         }
+
+        // Subscribe to scene load events to catch level transitions
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    private void OnDestroy()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
     }
 
     private void Start()
     {
 #if ENABLE_WINMD_SUPPORT
-        InitializeScreenshotFolder(); // Initialize screenshot folder
+        InitializeScreenshotFolder(); 
 #endif
     }
 
@@ -99,17 +115,79 @@ public class ScreenshotManager : MonoBehaviour
 #endif
     }
 
-#if ENABLE_WINMD_SUPPORT
-    public void SetScreenshotFolder(string newFolder, StorageFolder folder)
+    // Standardized cross-platform entry point to set directories safely
+    public void SetScreenshotFolder(string newFolder, object folderObj)
     {
         screenshotFolder = newFolder;
-        screenshotStorageFolder = folder;
-    }
+        baseScreenshotFolder = newFolder;
+
+#if ENABLE_WINMD_SUPPORT
+        screenshotStorageFolder = folderObj as StorageFolder;
+        baseStorageFolder = folderObj as StorageFolder;
 #endif
+    }
 
     public string GetScreenshotFolder()
     {
         return screenshotFolder;
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        string sceneName = scene.name;
+
+        if (sceneName == "DefaultLevel" || sceneName == "CustomLevel" || sceneName == "RandomLevel")
+        {
+            string subfolderName = DateTime.Now.ToString("yyyy-MM-dd_HHmmss");
+            Debug.Log($"ScreenshotManager: Creating session subfolder '{subfolderName}' for scene {sceneName}");
+
+#if ENABLE_WINMD_SUPPORT
+            if (baseStorageFolder != null)
+            {
+                UnityEngine.WSA.Application.InvokeOnUIThread(async () =>
+                {
+                    try
+                    {
+                        StorageFolder subFolder = await baseStorageFolder.CreateFolderAsync(subfolderName, CreationCollisionOption.OpenIfExists);
+                        UnityEngine.WSA.Application.InvokeOnAppThread(() =>
+                        {
+                            screenshotStorageFolder = subFolder;
+                            screenshotFolder = subFolder.Path;
+                            Debug.Log($"UWP Session subfolder active: {screenshotFolder}");
+                        }, false);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogError($"Failed to create UWP subfolder: {ex.Message}");
+                    }
+                }, false);
+            }
+            else
+            {
+                CreateFallbackSubfolder(subfolderName);
+            }
+#else
+            CreateFallbackSubfolder(subfolderName);
+#endif
+        }
+        else
+        {
+            // Revert back to base root folder when leaving to menu or other scenes
+            screenshotFolder = baseScreenshotFolder;
+#if ENABLE_WINMD_SUPPORT
+            screenshotStorageFolder = baseStorageFolder;
+#endif
+        }
+    }
+
+    private void CreateFallbackSubfolder(string subfolderName)
+    {
+        screenshotFolder = Path.Combine(baseScreenshotFolder, subfolderName);
+        if (!Directory.Exists(screenshotFolder))
+        {
+            Directory.CreateDirectory(screenshotFolder);
+        }
+        Debug.Log($"Session subfolder active: {screenshotFolder}");
     }
 
     public System.Collections.IEnumerator TakeScreenshotWithExif()
@@ -132,46 +210,53 @@ public class ScreenshotManager : MonoBehaviour
         byte[] jpgBytes = screenshot.EncodeToJPG();
 
 #if ENABLE_WINMD_SUPPORT
-    string tempPath = Path.Combine(Application.persistentDataPath, "temp.jpg"); // Compute on main thread
+        string tempPath = Path.Combine(Application.persistentDataPath, "temp.jpg"); 
 
-    if (screenshotStorageFolder == null)
-    {
-        Debug.LogWarning("StorageFolder is null. Using screenshotFolder path.");
-        string fallbackPath = screenshotFolder;
-        if (!Directory.Exists(fallbackPath)) Directory.CreateDirectory(fallbackPath);
-        string filePath = Path.Combine(fallbackPath, filename);
-        File.WriteAllBytes(filePath, jpgBytes);
-        AddExifData(filePath, timestamp, latitude, longitude);
-        Debug.Log($"Screenshot saved (fallback): {filePath}");
-    }
-    else
-    {
-        UnityEngine.WSA.Application.InvokeOnUIThread(async () =>
+        if (screenshotStorageFolder == null)
         {
-            try
+            Debug.LogWarning("StorageFolder is null. Using screenshotFolder path.");
+            string fallbackPath = screenshotFolder;
+            if (!Directory.Exists(fallbackPath)) Directory.CreateDirectory(fallbackPath);
+            string filePath = Path.Combine(fallbackPath, filename);
+            File.WriteAllBytes(filePath, jpgBytes);
+            AddExifData(filePath, timestamp, latitude, longitude);
+            Debug.Log($"Screenshot saved (fallback): {filePath}");
+        }
+        else
+        {
+            UnityEngine.WSA.Application.InvokeOnUIThread(async () =>
             {
-                StorageFile file = await screenshotStorageFolder.CreateFileAsync(filename, CreationCollisionOption.ReplaceExisting);
-                await FileIO.WriteBytesAsync(file, jpgBytes);
-                File.WriteAllBytes(tempPath, jpgBytes);
-
                 try
                 {
-                    AddExifData(tempPath, timestamp, latitude, longitude);
-                    byte[] updatedBytes = File.ReadAllBytes(tempPath);
-                    await FileIO.WriteBytesAsync(file, updatedBytes);
-                    Debug.Log($"Screenshot saved: {file.Path}");
+                    StorageFile file = await screenshotStorageFolder.CreateFileAsync(filename, CreationCollisionOption.ReplaceExisting);
+                    await FileIO.WriteBytesAsync(file, jpgBytes);
+                    File.WriteAllBytes(tempPath, jpgBytes);
+
+                    try
+                    {
+                        AddExifData(tempPath, timestamp, latitude, longitude);
+                        byte[] updatedBytes = File.ReadAllBytes(tempPath);
+                        await FileIO.WriteBytesAsync(file, updatedBytes);
+                        Debug.Log($"Screenshot saved: {file.Path}");
+                    }
+                    finally
+                    {
+                        if (File.Exists(tempPath)) File.Delete(tempPath);
+                    }
                 }
-                finally
+                catch (Exception ex)
                 {
-                    if (File.Exists(tempPath)) File.Delete(tempPath);
+                    Debug.LogError($"Failed to save screenshot: {ex.Message}");
                 }
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError($"Failed to save screenshot: {ex.Message}");
-            }
-        }, false);
-    }
+            }, false);
+        }
+#else
+        // Direct Implementation for Non-UWP standalone environments
+        if (!Directory.Exists(screenshotFolder)) Directory.CreateDirectory(screenshotFolder);
+        string filePath = Path.Combine(screenshotFolder, filename);
+        File.WriteAllBytes(filePath, jpgBytes);
+        AddExifData(filePath, timestamp, latitude, longitude);
+        Debug.Log($"Screenshot saved: {filePath}");
 #endif
 
         Destroy(screenshot);
@@ -183,10 +268,16 @@ public class ScreenshotManager : MonoBehaviour
         {
             ExifData exif = new ExifData(path);
             exif.SetTagValue(ExifTag.DateTimeOriginal, timestamp, StrCoding.Utf8);
+            
+            // Set the reference direction tags based on positive/negative status
             exif.SetTagValue(ExifTag.GpsLatitudeRef, latitude >= 0 ? "N" : "S", StrCoding.UsAscii);
             exif.SetTagValue(ExifTag.GpsLongitudeRef, longitude >= 0 ? "E" : "W", StrCoding.UsAscii);
-            GeoCoordinate latCoord = GeoCoordinate.FromDecimal((decimal)latitude, true);
-            GeoCoordinate lonCoord = GeoCoordinate.FromDecimal((decimal)longitude, false);
+            
+            // CRITICAL FIX: Convert using the absolute values since EXIF coordinates are always positive.
+            // The Ref tag ("N"/"S"/"E"/"W") handles the negative indicator.
+            GeoCoordinate latCoord = GeoCoordinate.FromDecimal((decimal)Math.Abs(latitude), true);
+            GeoCoordinate lonCoord = GeoCoordinate.FromDecimal((decimal)Math.Abs(longitude), false);
+            
             exif.SetGpsLatitude(latCoord);
             exif.SetGpsLongitude(lonCoord);
             exif.Save();
@@ -199,21 +290,13 @@ public class ScreenshotManager : MonoBehaviour
 
     private bool CanTakeScreenshot()
     {
-        // Check GameManager state
         if (GameManager.Instance == null || GameManager.Instance.CurrentState != GameManager.GameState.InGame)
             return false;
 
-        // Check LevelManager state
         LevelManager levelManager = FindAnyObjectByType<LevelManager>();
         if (levelManager == null || levelManager.CurrentLevelState != LevelManager.LevelState.Playing)
             return false;
 
         return true;
     }
-
-    internal void SetScreenshotFolder(string currentPath, object value)
-    {
-        throw new NotImplementedException();
-    }
-
 }

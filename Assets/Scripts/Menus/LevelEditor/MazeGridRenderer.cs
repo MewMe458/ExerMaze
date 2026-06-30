@@ -14,7 +14,6 @@ public class MazeGridRenderer : MonoBehaviour
     [SerializeField] private Button recenterButton;
     [SerializeField] private TMP_Text zoomSizeText;
     [SerializeField] private RectTransform contentRectTransform;
-    // [SerializeField] private List<Color> materialPreviewColors;
     [SerializeField] public List<WallMaterialData> wallMaterials;
 
     [Header("Element Prefabs")]
@@ -33,8 +32,9 @@ public class MazeGridRenderer : MonoBehaviour
     [SerializeField] private Sprite slowPotionIcon;
     [SerializeField] private Sprite teleporterIcon;
 
-    // Keeps track of spawned elements so they can be removed if overridden
+    // Keeps track of spawned elements and materials so they can be managed dynamically
     private Dictionary<Vector2Int, GameObject> spawnedElements = new Dictionary<Vector2Int, GameObject>();
+    private Dictionary<Vector2Int, GameObject> spawnedMaterials = new Dictionary<Vector2Int, GameObject>();
 
     private MazeInputHandler inputHandler;
     private Button[,] cellButtons;
@@ -130,7 +130,8 @@ public class MazeGridRenderer : MonoBehaviour
         }
 
         ResetSolutionVisibility();
-        ClearAllElements(); // 🔥 FIX 1: Clear tracking dictionary references from the previous maze
+        ClearAllElements(); 
+        ClearAllMaterials(); 
 
         this.mazeData = mazeData;
 
@@ -205,6 +206,8 @@ public class MazeGridRenderer : MonoBehaviour
                 pointerUpEntry.eventID = EventTriggerType.PointerUp;
                 pointerUpEntry.callback.AddListener((eventData) => inputHandler?.OnPointerUp());
                 trigger.triggers.Add(pointerUpEntry);
+
+                DrawMaterial(currentX, currentY);
             }
         }
         RefreshAllCellTexts();
@@ -219,7 +222,6 @@ public class MazeGridRenderer : MonoBehaviour
         if (inputHandler != null)
             inputHandler.Initialize(mazeData, cellButtons);
 
-        // 🔥 FIX 2: Iterate through the loaded challenge elements and draw their icons
         if (mazeData.elements != null)
         {
             foreach (var element in mazeData.elements)
@@ -246,10 +248,11 @@ public class MazeGridRenderer : MonoBehaviour
                 Image cellImage = cellButtons[x, y].GetComponent<Image>();
                 cellImage.sprite = GetSpriteForCell(mazeData.cells[x, y]);
                 cellImage.color = GetCellColor(x, y);
+                
+                DrawMaterial(x, y);
             }
         }
 
-        // 🔥 FIX: Refresh texts when the grid updates completely
         RefreshAllCellTexts();
     }
 
@@ -257,7 +260,7 @@ public class MazeGridRenderer : MonoBehaviour
     {
         if (cellButtons == null || x < 0 || x >= rows || y < 0 || y >= cols)
         {
-            Debug.LogError($"UpdateAffectedCells received invalid coordinates: ({x}, {y}). Expected 0 <= x < {rows} and 0 <= y < {cols}. cellButtons is {(cellButtons == null ? "null" : "not null")}");
+            Debug.LogError($"UpdateAffectedCells received invalid coordinates: ({x}, {y}). Expected 0 <= x < {rows} and 0 <= y < {cols}.");
             return;
         }
 
@@ -266,10 +269,6 @@ public class MazeGridRenderer : MonoBehaviour
         {
             cellImage.sprite = GetSpriteForCell(mazeData.cells[x, y]);
         }
-        else
-        {
-            Debug.LogWarning($"UpdateAffectedCells: Cell button at ({x}, {y}) has no Image component.");
-        }
 
         switch (direction)
         {
@@ -277,38 +276,28 @@ public class MazeGridRenderer : MonoBehaviour
                 if (x > 0)
                 {
                     Image neighborImage = cellButtons[x - 1, y].GetComponent<Image>();
-                    if (neighborImage != null)
-                    {
-                        neighborImage.sprite = GetSpriteForCell(mazeData.cells[x - 1, y]);
-                    }
+                    if (neighborImage != null) neighborImage.sprite = GetSpriteForCell(mazeData.cells[x - 1, y]);
                 }
                 break;
             case MazeInputHandler.WallDirection.Right:
                 if (y < cols - 1)
                 {
                     Image neighborImage = cellButtons[x, y + 1].GetComponent<Image>();
-                    if (neighborImage != null)
-                    {
-                        neighborImage.sprite = GetSpriteForCell(mazeData.cells[x, y + 1]);
-                    }
+                    if (neighborImage != null) neighborImage.sprite = GetSpriteForCell(mazeData.cells[x, y + 1]);
                 }
                 break;
             case MazeInputHandler.WallDirection.Bottom:
                 if (x < rows - 1)
                 {
                     Image neighborImage = cellButtons[x + 1, y].GetComponent<Image>();
-                    if (neighborImage != null)
-                    {
-                        neighborImage.sprite = GetSpriteForCell(mazeData.cells[x + 1, y]);
-                    }
+                    if (neighborImage != null) neighborImage.sprite = GetSpriteForCell(mazeData.cells[x + 1, y]);
                 }
                 break;
             case MazeInputHandler.WallDirection.Left:
                 if (y > 0)
                 {
                     Image neighborImage = cellButtons[x, y - 1].GetComponent<Image>();
-                    if (neighborImage != null)
-                        neighborImage.sprite = GetSpriteForCell(mazeData.cells[x, y - 1]);
+                    if (neighborImage != null) neighborImage.sprite = GetSpriteForCell(mazeData.cells[x, y - 1]);
                 }
                 break;
         }
@@ -428,13 +417,6 @@ public class MazeGridRenderer : MonoBehaviour
 
     public Color GetCellColor(int x, int y)
     {
-        // We removed the green and red returns here so they don't paint the button background.
-        int matIndex = mazeData.cells[x, y].MaterialIndex;
-        if (wallMaterials != null && matIndex >= 0 && matIndex < wallMaterials.Count)
-        {
-            return wallMaterials[matIndex].previewColor;
-        }
-
         return Color.white;
     }
 
@@ -456,22 +438,39 @@ public class MazeGridRenderer : MonoBehaviour
         if (cellButtons == null || cellButtons[x, y] == null) return;
 
         Button cellButton = cellButtons[x, y];
-        TMP_Text cellText = cellButton.GetComponentInChildren<TMP_Text>();
+        Transform bgTransform = cellButton.transform.Find("LabelBackground");
+        TMP_Text cellText = bgTransform != null ? bgTransform.GetComponentInChildren<TMP_Text>() : null;
 
         bool isStart = mazeData.cells[x, y].IsStart;
         bool isGoal = mazeData.cells[x, y].IsGoal;
 
         if (isStart || isGoal)
         {
-            if (cellText == null)
+            if (bgTransform == null)
             {
+                // Create a solid white wrapper background object
+                GameObject bgObj = new GameObject("LabelBackground");
+                bgObj.transform.SetParent(cellButton.transform, false);
+                
+                Image bgImage = bgObj.AddComponent<Image>();
+                bgImage.color = Color.white;
+                bgImage.raycastTarget = false;
+
+                // Adjust layout size to wrap neatly inside the cell
+                RectTransform bgRect = bgObj.GetComponent<RectTransform>();
+                bgRect.anchorMin = new Vector2(0.1f, 0.25f);
+                bgRect.anchorMax = new Vector2(0.9f, 0.75f);
+                bgRect.offsetMin = Vector2.zero;
+                bgRect.offsetMax = Vector2.zero;
+
+                // Create the text object as a child of the background border panel
                 GameObject textObj = new GameObject("Label");
-                textObj.transform.SetParent(cellButton.transform, false);
+                textObj.transform.SetParent(bgObj.transform, false);
                 cellText = textObj.AddComponent<TextMeshProUGUI>();
                 
                 cellText.alignment = TextAlignmentOptions.Center;
-                cellText.fontSize = 16; // Bumped up slightly for readability
-                cellText.fontStyle = FontStyles.Bold; // Make it stand out without a background color
+                cellText.fontSize = 14; 
+                cellText.fontStyle = FontStyles.Bold; 
                 cellText.raycastTarget = false;
 
                 RectTransform rect = textObj.GetComponent<RectTransform>();
@@ -481,11 +480,10 @@ public class MazeGridRenderer : MonoBehaviour
                 rect.offsetMax = Vector2.zero;
             }
 
-            // Apply colors to the TEXT instead of the cell background
             if (isStart)
             {
                 cellText.text = "Start";
-                cellText.color = Color.green;
+                cellText.color = new Color(0f, 0.6f, 0f); // Slightly darker green for visibility on white
             }
             else if (isGoal)
             {
@@ -495,9 +493,9 @@ public class MazeGridRenderer : MonoBehaviour
         }
         else
         {
-            if (cellText != null)
+            if (bgTransform != null)
             {
-                Destroy(cellText.gameObject);
+                Destroy(bgTransform.gameObject);
             }
         }
     }
@@ -522,26 +520,71 @@ public class MazeGridRenderer : MonoBehaviour
         {
             return wallSprites[index];
         }
-        Debug.LogWarning("Sprite not found for index: " + index + ". Using default sprite.");
         return wallSprites != null && wallSprites.Length > 0 && wallSprites[15] != null ? wallSprites[15] : null;
     }
 
-    // This method handles drawing the specific element
+    public void DrawMaterial(int x, int y)
+    {
+        Vector2Int position = new Vector2Int(x, y);
+        RemoveMaterialVisual(position);
+
+        int matIndex = mazeData.cells[x, y].MaterialIndex;
+        if (wallMaterials != null && matIndex >= 0 && matIndex < wallMaterials.Count)
+        {
+            WallMaterialData matData = wallMaterials[matIndex];
+            Sprite spriteToUse = matData.previewSprite;
+
+            if (spriteToUse != null)
+            {
+                Button cellButton = cellButtons[x, y];
+                GameObject matObj = new GameObject("MaterialOverlay");
+                matObj.transform.SetParent(cellButton.transform, false);
+                matObj.transform.SetAsFirstSibling();
+
+                RectTransform rect = matObj.AddComponent<RectTransform>();
+                rect.anchorMin = Vector2.zero;
+                rect.anchorMax = Vector2.one;
+                rect.offsetMin = Vector2.zero;
+                rect.offsetMax = Vector2.zero;
+                rect.localScale = new Vector3(0.95f, 0.95f, 1f);
+
+                Image img = matObj.AddComponent<Image>();
+                img.sprite = spriteToUse;
+                img.raycastTarget = false;
+
+                spawnedMaterials[position] = matObj;
+            }
+        }
+    }
+
+    public void RemoveMaterialVisual(Vector2Int position)
+    {
+        if (spawnedMaterials.TryGetValue(position, out GameObject matObj))
+        {
+            Destroy(matObj);
+            spawnedMaterials.Remove(position);
+        }
+    }
+
+    public void ClearAllMaterials()
+    {
+        foreach (var mat in spawnedMaterials.Values)
+        {
+            Destroy(mat);
+        }
+        spawnedMaterials.Clear();
+    }
+
     public void DrawElement(MazeData.ElementData element)
     {
         RemoveElementVisual(element.position);
 
-        Button cellButton =
-            cellButtons[element.position.x, element.position.y];
-
-        GameObject iconObj = new GameObject(
-            element.elementType);
+        Button cellButton = cellButtons[element.position.x, element.position.y];
+        GameObject iconObj = new GameObject(element.elementType);
 
         iconObj.transform.SetParent(cellButton.transform, false);
 
-        RectTransform rect =
-            iconObj.AddComponent<RectTransform>();
-
+        RectTransform rect = iconObj.AddComponent<RectTransform>();
         rect.anchorMin = Vector2.zero;
         rect.anchorMax = Vector2.one;
         rect.offsetMin = Vector2.zero;
@@ -549,9 +592,7 @@ public class MazeGridRenderer : MonoBehaviour
         rect.localScale = Vector3.one;
 
         Image img = iconObj.AddComponent<Image>();
-
         img.sprite = GetIconForElementType(element.elementType);
-
         img.raycastTarget = false;
 
         spawnedElements[element.position] = iconObj;
@@ -561,50 +602,27 @@ public class MazeGridRenderer : MonoBehaviour
     {
         switch (type)
         {
-            case "DogNPC":
-                return dogIcon;
-
-            case "Bones":
-                return boneIcon;
-
-            case "Shield":
-                return shieldIcon;
-
-            case "Special":
-                return starIcon;
-
-            case "SlowPotion":
-                return slowPotionIcon;
-
-            case "Teleporter":
-                return teleporterIcon;
+            case "DogNPC": return dogIcon;
+            case "Bones": return boneIcon;
+            case "Shield": return shieldIcon;
+            case "Special": return starIcon;
+            case "SlowPotion": return slowPotionIcon;
+            case "Teleporter": return teleporterIcon;
         }
-
         return null;
     }
 
     public void DestroyElementAt(int x, int y)
     {
-        // Search through your active instantiated element prefabs container.
-        // If you are storing them inside a list or dictionary, find it by position:
-        
-        // Example assuming your element prefabs are children of a specific container or spawned cells:
         string expectedName = $"Element_{x}_{y}"; 
-        
-        // Look through spawned children to clean up the hierarchy
         foreach (Transform child in transform) 
         {
-            // Adjust this naming condition based on how your script names spawned prefabs
             if (child.name.Contains($"({x}, {y})") || child.name == expectedName)
             {
                 Destroy(child.gameObject);
                 break;
             }
         }
-        
-        // Alternately, if your script completely clears and recreates the grid on changes, 
-        // you can simply call your existing regeneration/render method:
-        // UpdateGrid(currentMazeData); 
     }
 
     public void RemoveElementVisual(Vector2Int position)
@@ -623,20 +641,6 @@ public class MazeGridRenderer : MonoBehaviour
             Destroy(element);
         }
         spawnedElements.Clear();
-    }
-
-    private GameObject GetPrefabForElementType(string type)
-    {
-        switch (type)
-        {
-            case "DogNPC": return dogNPCPrefab;
-            case "Bones": return bonePrefab;
-            case "Shield": return shieldPrefab;
-            case "Special": return starPrefab;
-            case "SlowPotion": return slowPotionPrefab;
-            case "Teleporter": return teleporterPrefab;
-            default: return null;
-        }
     }
 
     private void UpdateZoomText()

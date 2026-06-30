@@ -1070,8 +1070,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 940, y: -936.03}
-  m_SizeDelta: {x: 1880, y: 1080.01}
+  m_AnchoredPosition: {x: 940, y: -936.03015}
+  m_SizeDelta: {x: 1880, y: 1296.01}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &326828210
 MonoBehaviour:
@@ -1118,7 +1118,8 @@ MonoBehaviour:
     If the dog attacks while a shield is active, the bite will not be counted.\n\n<b><i>Special
     Item</b></i>: Triggers one of the following effect when collected:\n- Score Bonus\n-
     Time Reduction\n- Receive Bone\n- Activate Shield\n- Reveal End Goal Location
-    for a short duration"
+    for a short duration\n\n<b><i>Slow Potion</b></i>: Halves your movement and turning
+    speed.\n\n<b><i>Teleporter</b></i>: Teleports you to a random point in the maze."
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 0cd606b23a584b24b891401c951c30e7, type: 2}
   m_sharedMaterial: {fileID: -1970553363560642101, guid: 0cd606b23a584b24b891401c951c30e7, type: 2}
@@ -1239,7 +1240,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 1546.0701}
+  m_SizeDelta: {x: 0, y: 1600.4872}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &370861533
 MonoBehaviour:
@@ -1317,7 +1318,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 940, y: -324.01}
-  m_SizeDelta: {x: 1880, y: 270.01}
+  m_SizeDelta: {x: 1880, y: 216.01}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &540847574
 MonoBehaviour:
@@ -1356,13 +1357,9 @@ MonoBehaviour:
   m_text: '
 
     Choose a wall to be edited (from <color=white>Edit Wall</color>
-    dropdown or use keyboard shortcut of <color=white>WASD</color> or <color=white>Arrow
-    keys</color>), then click on a cell in the maze to edit the wall.
-
-    Choose
-    <color=white>Add</color> or <color=white>Remove</color> mode, using <color=white>Left
-    mouse button</color> will edit the wall with selected mode while <color=white>Right
-    mouse button</color> will do the opposite.'
+    dropdown or use keyboard shortcut of <color=white>WASD</color> keys), then click
+    on a cell in the maze to edit the wall, using <color=white>Left mouse button</color>
+    will toggle the wall with selected mode.'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 0cd606b23a584b24b891401c951c30e7, type: 2}
   m_sharedMaterial: {fileID: -1970553363560642101, guid: 0cd606b23a584b24b891401c951c30e7, type: 2}
@@ -3160,7 +3157,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 940, y: -648.03}
-  m_SizeDelta: {x: 1880, y: 486.01}
+  m_SizeDelta: {x: 1880, y: 270.01}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &1068481884
 MonoBehaviour:
@@ -3200,15 +3197,10 @@ MonoBehaviour:
 
     <b><u>Tracking Mode</u></b>
 
-    The <color=white>Character</color>
-    tracking mode tracks the movement of the in-game character in the level. Can
-    choose this mode if want to see how the character movement appear on real world
-    while moving in the level.
-
-
-    The <color=white>Real Life</color> tracking
-    mode uses random movement to simulate distance moved by player during a play.
-    Can choose this mode if want to record real life distance moved in GPX file.
+    This game simultaneously tracks
+    the movement of the in-game character in the level and uses random movement to
+    simulate distance moved by player during a play. They are saved in two seperate
+    GPX files called Character and Real Life.
 
 '
   m_isRightToLeft: 0
@@ -3324,7 +3316,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 940, y: 0}
+  m_AnchoredPosition: {x: 940, y: -0}
   m_SizeDelta: {x: 1880, y: 0}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &1126858722
@@ -3363,11 +3355,18 @@ MonoBehaviour:
       m_Calls: []
   m_text: '<b><u>Credits</u></b>
 
-    Special thanks to the following asset creators
-    and contributors whose work made this game possible:
+    Special thanks to Dr Ian Chai for supervising
+    and giving constant feedback on my work throughout FYP1 and FYP2.
 
+    Speical
+    thanks to Dr Albert Quek for moderating my work throughout FYP1 and FYP2.
 
-    To be added...'
+    Special
+    thanks to Hong Han for providing me the game for me to improve on.
+
+    Special
+    thanks to Ashley Sim for giving me inspirtation for the random maze generation
+    algorithm.'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 0cd606b23a584b24b891401c951c30e7, type: 2}
   m_sharedMaterial: {fileID: -1970553363560642101, guid: 0cd606b23a584b24b891401c951c30e7, type: 2}
@@ -3481,8 +3480,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 940, y: -594.02}
-  m_SizeDelta: {x: 1880, y: 162.01}
+  m_AnchoredPosition: {x: 940, y: -540.02}
+  m_SizeDelta: {x: 1880, y: 216.01}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &1187611559
 MonoBehaviour:
@@ -3520,8 +3519,9 @@ MonoBehaviour:
       m_Calls: []
   m_text: '
 
-    Determine the starting point of the maze by clicking the <color=white>Set
-    Starting Point</color> button, and choose one of the highlighted corner cells.'
+    Determine both starting and/or end points of the maze by clicking
+    the <color=white>Set Starting Point</color> button and the <color=white>Set End
+    Point</color> button, and choose one of the cells.'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 0cd606b23a584b24b891401c951c30e7, type: 2}
   m_sharedMaterial: {fileID: -1970553363560642101, guid: 0cd606b23a584b24b891401c951c30e7, type: 2}
@@ -4070,7 +4070,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 574.04004}
+  m_SizeDelta: {x: 0, y: 682.46716}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &1341460699
 MonoBehaviour:
@@ -4549,7 +4549,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 2266.05}
+  m_SizeDelta: {x: 0, y: 2698.4673}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &1414022720
 MonoBehaviour:
@@ -4878,8 +4878,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 940, y: -648.03}
-  m_SizeDelta: {x: 1880, y: 486.01}
+  m_AnchoredPosition: {x: 940, y: -918.04004}
+  m_SizeDelta: {x: 1880, y: 324.01}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &1496920288
 MonoBehaviour:
@@ -5952,8 +5952,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 940, y: -2016.04}
-  m_SizeDelta: {x: 1880, y: 810.01}
+  m_AnchoredPosition: {x: 940, y: -2232.04}
+  m_SizeDelta: {x: 1880, y: 1026.01}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &1728787930
 MonoBehaviour:
@@ -5996,27 +5996,27 @@ MonoBehaviour:
     The final score of a level is determined
     by:
 
-    
 
-    <b><i>Time:</i></b> The faster a level is completed, the more
-    bonus will be awarded to the final score. If the level is completed in 15 minutes
-    or more, no time bonus will be given.
 
-    
+    <b><i>Time:</i></b> The faster a level is completed, the more bonus
+    will be awarded to the final score. If the level is completed in 15 minutes or
+    more, no time bonus will be given.
 
-    <b><i>Dog Bite:</i></b> For
-    every dog bite, a penalty of 50 points is applied.
 
-    
 
-    <b><i>Dog Tamed:</i></b>
-    For every dog tamed, a bonus of 100 points is awarded.
+    <b><i>Dog Bite:</i></b> For every dog
+    bite, a penalty of 50 points is applied.
 
-    
 
-    <b><i>Special
-    Item:</i></b> For every special item collected, a bonus of 50 points is given,
-    plus an additional bonus based on the randomly triggered effect of the item.
+
+    <b><i>Dog Tamed:</i></b> For
+    every dog tamed, a bonus of 100 points is awarded.
+
+
+
+    <b><i>Special Item:</i></b>
+    For every special item collected, a bonus of 50 points is given, plus an additional
+    bonus based on the randomly triggered effect of the item.
 
 '
   m_isRightToLeft: 0
@@ -6797,7 +6797,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 940, y: -1512.06}
-  m_SizeDelta: {x: 1880, y: 594.01}
+  m_SizeDelta: {x: 1880, y: 648.01}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &2016039174
 MonoBehaviour:
@@ -6833,12 +6833,24 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\n<b><u>Other Functions</u></b>\nLevel editor can toggle between edit
-    or move mode, which move mode allows user to view the maze without worrying about
-    accidentally clicking and edit the maze. \n\nMaze can be dragged freely when
-    in move mode, and can be recentered if moved out of the editing section.\n\nZoom
-    in and zoom out of the maze by using either the slider and buttons on the side,
-    or use mouse scroll wheel."
+  m_text: '
+
+    <b><u>Other Functions</u></b>
+
+    Level editor can toggle between
+    edit, move, or wall color mode, which move mode allows user to view the maze
+    without worrying about accidentally clicking and edit the maze, while the wall
+    color mode lets the user select a wall and then click on the cell to have that
+    assigned color.
+
+
+    Maze can be dragged freely when in move mode, and can be
+    recentered if moved out of the editing section.
+
+
+    Zoom in and zoom out of
+    the maze by using either the slider and buttons on the side, or use mouse scroll
+    wheel.'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 0cd606b23a584b24b891401c951c30e7, type: 2}
   m_sharedMaterial: {fileID: -1970553363560642101, guid: 0cd606b23a584b24b891401c951c30e7, type: 2}

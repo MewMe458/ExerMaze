@@ -8,7 +8,6 @@ public class WallColorPopup : MonoBehaviour
     [SerializeField] private GameObject root;
     [SerializeField] private Transform contentParent;
     [SerializeField] private Button materialButtonPrefab;
-    // 🔥 ADDED: Reference to your close/cancel button so we can listen to clicks
     [SerializeField] private Button cancelButton; 
 
     private MazeGridRenderer gridRenderer;
@@ -28,7 +27,6 @@ public class WallColorPopup : MonoBehaviour
             PopulateMaterials();
         }
 
-        // 🔥 ADDED: Hook up the Cancel button functionality automatically on startup
         if (cancelButton != null)
         {
             cancelButton.onClick.RemoveAllListeners();
@@ -54,13 +52,7 @@ public class WallColorPopup : MonoBehaviour
             TMP_Text txt = btn.GetComponentInChildren<TMP_Text>();
             Image img = btn.GetComponent<Image>();
 
-            // SET TEXT
-            if (txt != null)
-            {
-                txt.text = wallMaterials[index].materialName;
-            }
-
-            // SET PREVIEW IMAGE
+            // 🎨 UPDATED: Prioritize displaying the wall texture image asset over raw colors
             if (img != null)
             {
                 if (wallMaterials[index].previewSprite != null)
@@ -75,13 +67,48 @@ public class WallColorPopup : MonoBehaviour
                 }
             }
 
+            // --- TEXT BORDER / WRAPPER CONFIGURATION ---
+            if (txt != null)
+            {
+                txt.text = wallMaterials[index].materialName;
+
+                // Create a solid white wrapper background object
+                GameObject bgObj = new GameObject("TextBackground");
+                bgObj.transform.SetParent(btn.transform, false);
+
+                Image bgImage = bgObj.AddComponent<Image>();
+                bgImage.color = Color.white;
+                bgImage.raycastTarget = false;
+
+                // Structure the wrapper layout overlaying the button center
+                RectTransform bgRect = bgObj.GetComponent<RectTransform>();
+                bgRect.anchorMin = new Vector2(0.05f, 0.2f);
+                bgRect.anchorMax = new Vector2(0.95f, 0.8f);
+                bgRect.offsetMin = Vector2.zero;
+                bgRect.offsetMax = Vector2.zero;
+
+                // Re-parent the existing text into the white border background
+                txt.transform.SetParent(bgObj.transform, false);
+
+                // Configure text styling for baseline contrast against white background
+                txt.color = Color.black;
+                txt.fontSize = 12;
+                txt.fontStyle = FontStyles.Bold;
+
+                RectTransform txtRect = txt.GetComponent<RectTransform>();
+                txtRect.anchorMin = Vector2.zero;
+                txtRect.anchorMax = Vector2.one;
+                txtRect.offsetMin = Vector2.zero;
+                txtRect.offsetMax = Vector2.zero;
+            }
+            // --------------------------------------------
+
             btn.onClick.RemoveAllListeners();
             btn.onClick.AddListener(() =>
             {
                 selectedMaterialIndex = index;
                 Debug.Log("Selected Material: " + wallMaterials[index].materialName);
                 
-                // Save selection down to the Mode tracker and close
                 if (editorMode != null)
                 {
                     editorMode.SetGlobalMaterialIndex(selectedMaterialIndex);
@@ -91,16 +118,12 @@ public class WallColorPopup : MonoBehaviour
         }
     }
 
-    // ⚙️ UPDATED: Cancel handler to reset both the logic mode and the UI buttons
     private void OnCancelPressed()
     {
-        // Find or check the input handler to update button highlights
         if (editorMode != null)
         {
-            // First drop out of custom wall painting states
             editorMode.ExitWallColorMode(); 
 
-            // Find the input handler sitting on the controller structure to update visual elements
             MazeInputHandler handler = editorMode.GetComponent<MazeInputHandler>();
             if (handler != null)
             {
@@ -108,7 +131,6 @@ public class WallColorPopup : MonoBehaviour
             }
             else
             {
-                // Fallback attempt if it's structured differently in your hierarchy
                 handler = FindObjectOfType<MazeInputHandler>();
                 if (handler != null) handler.ForceReturnToEditMode();
             }

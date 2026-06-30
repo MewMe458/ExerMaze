@@ -144,19 +144,21 @@ public class SettingsManager : MonoBehaviour
     #region Screenshot directory methods
     private string GetDefaultDirectory()
     {
-    #if ENABLE_WINMD_SUPPORT
-        string resultPath = Windows.Storage.ApplicationData.Current.LocalFolder.Path;
-    #else
+        // Environment.SpecialFolder.MyPictures targets C:\Users\<Name>\Pictures across standard Windows builds.
+        // Appending "FitMazeScreenshots" ensures it stays organized inside its own folder.
         string resultPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+            Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
             "FitMazeScreenshots"
         );
 
+        // UWP/WINMD build tracking environments can still read directory paths via standard System.IO if given permission,
+        // but if strictly trapped in WinMD standalone AppData, Environment fallback handles native path extraction.
+#if !ENABLE_WINMD_SUPPORT
         if (!Directory.Exists(resultPath))
         {
             Directory.CreateDirectory(resultPath);
         }
-    #endif
+#endif
 
         UnityEngine.Debug.Log($"Default directory set to: {resultPath}");
         return resultPath;
@@ -176,7 +178,7 @@ public class SettingsManager : MonoBehaviour
             try
             {
                 FolderPicker folderPicker = new FolderPicker();
-                folderPicker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
+                folderPicker.SuggestedStartLocation = PickerLocationId.PicturesLibrary;
                 folderPicker.FileTypeFilter.Add("*");
                 UnityEngine.Debug.Log("Displaying folder picker...");
                 StorageFolder folder = await folderPicker.PickSingleFolderAsync();

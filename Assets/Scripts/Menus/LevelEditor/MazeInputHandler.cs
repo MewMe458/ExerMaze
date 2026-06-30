@@ -116,7 +116,10 @@ public class MazeInputHandler : MonoBehaviour, IBeginDragHandler, IDragHandler, 
         if (isWPressed || isAPressed || isSPressed || isDPressed)
         {
             bool isWallColorModeActive = editorMode != null && editorMode.IsEditingWallColor();
-            if (isMoveMode || isDeleteElementMode || isWallColorModeActive)
+            // Check if an element selection is currently active
+            bool isElementPlacementActive = editorController != null && !string.IsNullOrEmpty(editorController.SelectedElementType);
+
+            if (isMoveMode || isDeleteElementMode || isWallColorModeActive || isElementPlacementActive)
             {
                 ForceReturnToEditMode();
             }
@@ -230,6 +233,12 @@ public class MazeInputHandler : MonoBehaviour, IBeginDragHandler, IDragHandler, 
     {
         isMoveMode = true;
         isDeleteElementMode = false;
+        isWallColorMode = false;
+        // Fix: Clear out any active element placement selections before entering color mode!
+        if (editorController != null)
+        {
+            editorController.DisableElementPlacement();
+        }
         if (editorMode != null) editorMode.ExitWallColorMode();
         UpdateButtonAppearances();
         ApplyCurrentMode();
@@ -240,6 +249,11 @@ public class MazeInputHandler : MonoBehaviour, IBeginDragHandler, IDragHandler, 
     {
         isMoveMode = false;
         isWallColorMode = false;
+        // Fix: Clear out any active element placement selections before entering color mode!
+        if (editorController != null)
+        {
+            editorController.DisableElementPlacement();
+        }
         if (editorMode != null) editorMode.ExitWallColorMode();
         UpdateButtonAppearances();
         ApplyCurrentMode();
@@ -253,7 +267,12 @@ public class MazeInputHandler : MonoBehaviour, IBeginDragHandler, IDragHandler, 
         isMoveMode = false;
         isWallColorMode = true;
         
-        // Fix: Do not call ExitEditStartPointMode() here anymore to prevent null errors.
+        // Fix: Clear out any active element placement selections before entering color mode!
+        if (editorController != null)
+        {
+            editorController.DisableElementPlacement();
+        }
+        
         editorMode.EnterWallColorMode();
         
         UpdateButtonAppearances();
@@ -321,7 +340,11 @@ public class MazeInputHandler : MonoBehaviour, IBeginDragHandler, IDragHandler, 
     {
         isMoveMode = false;
         isDeleteElementMode = false;
+        
         if (editorMode != null) editorMode.ExitWallColorMode();
+        // Safely tell the controller to drop the element placement state
+        if (editorController != null) editorController.DisableElementPlacement();
+        
         OnEditButtonClick();
     }
 

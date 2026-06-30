@@ -4,6 +4,7 @@ using TMPro;
 using System.IO;
 using UnityEngine.EventSystems;
 using System.Collections;
+using System;
 
 public class LevelManager : MonoBehaviour
 {
@@ -417,6 +418,7 @@ public class LevelManager : MonoBehaviour
         Debug.Log($"Level Restarted: {currentScene}");
     }
 
+// --- UPDATED: SEQUENTIAL LEVEL PROGRESSION LOGIC WITH GPX ACCUMULATION ---
     public void CompleteLevel()
     {
         if (CurrentLevelState != LevelState.Playing)
@@ -430,10 +432,55 @@ public class LevelManager : MonoBehaviour
         GameManager.Instance.AccumulatedTime += timer.GetElapsedTime();
 
         CurrentLevelState = LevelState.Completed;
-        Time.timeScale = 0f;
 
-        SceneManager.LoadScene("ContinueChoiceScene", LoadSceneMode.Additive);
+        string activeSceneName = SceneManager.GetActiveScene().name;
+
+        // Route behavior based on scene context and playlist queue status
+        if (activeSceneName == "RandomLevel")
+        {
+            Time.timeScale = 0f;
+            SceneManager.LoadScene("ContinueChoiceScene", LoadSceneMode.Additive);
+        }
+        else if (activeSceneName == "CustomLevel" && GameManager.Instance.CustomLevelPlayQueue.Count > 0)
+        {
+            // FLAG ACCUMULATION: Ensure the next custom level treats this as an ongoing session
+            GameManager.Instance.IsContinuingSession = true;
+
+            // Pull the next file path sequence item out of the queue
+            if (GameManager.Instance.AdvanceToNextCustomLevel())
+            {
+                try
+                {
+                    string json = File.ReadAllText(GameManager.Instance.CurrentCustomLevelPath);
+                    MazeData nextData = MazeDataSerializer.Deserialize(json);
+                    if (nextData != null)
+                    {
+                        nextData.RestoreAfterDeserialization();
+                        GameManager.Instance.LoadedMazeData = nextData;
+                        GameManager.Instance.SetMazeSize(nextData.rows, nextData.columns);
+                        
+                        // Seamless progression: clean reload scene for the next item
+                        SceneManager.LoadScene("CustomLevel");
+                        return;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"Failed to load subsequent custom playlist level: {ex.Message}");
+                }
+            }
+            
+            // Fallback safety if the next file errors out or queue is unexpectedly empty
+            Time.timeScale = 0f;
+            SceneManager.LoadScene(completeMenuScene, LoadSceneMode.Additive);
+        }
+        else
+        {
+            Time.timeScale = 0f;
+            SceneManager.LoadScene(completeMenuScene, LoadSceneMode.Additive);
+        }
     }
+    // ------------------------------------------------------------------------
 
     public float GetFinalTime()
     {

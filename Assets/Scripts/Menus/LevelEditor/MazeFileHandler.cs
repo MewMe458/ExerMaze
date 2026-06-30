@@ -39,7 +39,8 @@ public class MazeFileHandler : MonoBehaviour
             {
                 FileOpenPicker openPicker = new FileOpenPicker();
                 openPicker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
-                openPicker.FileTypeFilter.Add(".json");
+                // Changed from ".json" to ".fitmaze"
+                openPicker.FileTypeFilter.Add(".fitmaze");
                 StorageFile file = await openPicker.PickSingleFileAsync();
 
                 if (file != null)
@@ -89,8 +90,6 @@ public class MazeFileHandler : MonoBehaviour
             return;
         }
 
-        // Fix: Removed deprecated inputHandler.UpdateMazeDataWithToggles() call since toggle tracking is reactive.
-
         var validationResult = validator.ValidateMaze(mazeData, false, false);
         if (!validationResult.success)
         {
@@ -107,7 +106,8 @@ public class MazeFileHandler : MonoBehaviour
             {
                 FileSavePicker savePicker = new FileSavePicker();
                 savePicker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
-                savePicker.FileTypeChoices.Add("JSON File", new List<string>() { ".json" });
+                // Changed display label and registered ".fitmaze" as the file extension mapping
+                savePicker.FileTypeChoices.Add("FitMaze File", new List<string>() { ".fitmaze" });
                 
                 string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                 savePicker.SuggestedFileName = $"maze_{timestamp}";

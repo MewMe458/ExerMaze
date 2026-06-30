@@ -901,8 +901,10 @@ PlayerSettings:
       InternetClient: True
       Proximity: True
   metroTargetDeviceFamilies: {}
-  metroFTAName: 
-  metroFTAFileTypes: []
+  metroFTAName: FitMaze
+  metroFTAFileTypes:
+  - contentType: fitmaze
+    fileType: .fitmaze
   metroProtocolName: 
   vcxProjDefaultLanguage: 
   XboxOneProductId: 

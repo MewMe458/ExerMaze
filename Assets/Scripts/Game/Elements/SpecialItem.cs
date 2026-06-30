@@ -10,7 +10,6 @@ public class SpecialItem : MonoBehaviour
     private Timer timer;
 
     [SerializeField] private float minusTimeAmount = 10f;
-    public event Action<string> OnSpecialItemEffect;
 
     private bool isCollected = false; 
 
@@ -67,18 +66,20 @@ public class SpecialItem : MonoBehaviour
             bool hasDogs = levelManager.CheckIfLevelHasDog();
             int effect = hasDogs ? UnityEngine.Random.Range(0, 5) : UnityEngine.Random.Range(0, 3);
             
+            string effectMessage = baseMessage;
+
             switch (effect)
             {
                 case 0: 
                     int baseAmount = UnityEngine.Random.Range(5, 11);
                     int scoreAmount = baseAmount * 10; 
                     levelManager.AddScore(scoreAmount);
-                    OnSpecialItemEffect?.Invoke($"{baseMessage}, You got {scoreAmount} score bonus!");
+                    effectMessage = $"{baseMessage}, You got {scoreAmount} score bonus!";
                     Debug.Log($"Special Item: Added {scoreAmount} score");
                     break;
                 case 1: 
                     if (timer != null) timer.ReduceTime(minusTimeAmount);
-                    OnSpecialItemEffect?.Invoke($"{baseMessage}, Time reduced by {minusTimeAmount} seconds!");
+                    effectMessage = $"{baseMessage}, Time reduced by {minusTimeAmount} seconds!";
                     Debug.Log($"Special Item: Reduced time by {minusTimeAmount} seconds");
                     break;
                 case 2: 
@@ -86,7 +87,7 @@ public class SpecialItem : MonoBehaviour
                     if (goalMarker != null)
                     {
                         goalMarker.ActivateHint();
-                        OnSpecialItemEffect?.Invoke($"{baseMessage}, Goal hint revealed!");
+                        effectMessage = $"{baseMessage}, Goal hint revealed!";
                         Debug.Log("Special Item: Goal hint revealed");
                     }
                     else
@@ -96,14 +97,20 @@ public class SpecialItem : MonoBehaviour
                     break;
                 case 3: 
                     if (inventoryManager != null) inventoryManager.AddItem("Bones");
-                    OnSpecialItemEffect?.Invoke($"{baseMessage}, You got one bone!");
+                    effectMessage = $"{baseMessage}, You got one bone!";
                     Debug.Log($"Special Item: Added one bone");
                     break;
                 case 4: 
                     if (shieldPowerUp != null) shieldPowerUp.AddShieldTime();
-                    OnSpecialItemEffect?.Invoke($"{baseMessage}, Shield activated!");
+                    effectMessage = $"{baseMessage}, Shield activated!";
                     Debug.Log("Special Item: Extended shield");
                     break;
+            }
+
+            // Direct Call completely eliminates the registration/timing issues
+            if (uiManager != null)
+            {
+                uiManager.ShowLevelMessage(effectMessage);
             }
 
             Destroy(gameObject);

@@ -33,7 +33,11 @@ public class CustomLevelSelect : MonoBehaviour
     [SerializeField] private CustomLevelFileHandler fileHandler;
 
     private List<LevelInfoObject> levelInfoObjects = new List<LevelInfoObject>();
-    private LevelInfoObject selectedLevelInfo = null;
+    
+    // --- UPDATED: MULTI-SELECTION LIST MANAGEMENT ---
+    private List<LevelInfoObject> selectedLevelInfos = new List<LevelInfoObject>();
+    // ------------------------------------------------
+
     private string saveFilePath;
 
     void Awake()
@@ -75,6 +79,7 @@ public class CustomLevelSelect : MonoBehaviour
     private void LoadLevelInfoData()
     {
         levelInfoObjects.Clear();
+        selectedLevelInfos.Clear();
         foreach (Transform child in contentParent)
         {
             Destroy(child.gameObject);
@@ -86,7 +91,6 @@ public class CustomLevelSelect : MonoBehaviour
             LevelInfoDataList dataList = JsonUtility.FromJson<LevelInfoDataList>(json);
             foreach (var data in dataList.levels)
             {
-                // Normalize path for consistency
                 string normalizedPath = NormalizePath(data.filePath);
                 GameObject instance = Instantiate(levelInfoPrefab, contentParent);
                 LevelInfoObject levelInfo = instance.GetComponent<LevelInfoObject>();
@@ -130,10 +134,8 @@ public class CustomLevelSelect : MonoBehaviour
                 return;
             }
 
-            // Normalize path for consistency
             string normalizedPath = NormalizePath(filePath);
 
-            // Debug file existence
             bool fileExists = File.Exists(normalizedPath);
             Debug.Log($"Checking file existence at {normalizedPath}: {fileExists}");
             if (!fileExists)
@@ -161,97 +163,128 @@ public class CustomLevelSelect : MonoBehaviour
         }
     }
 
+    // Helper to extract and safely load MazeData directly from a file path
+    private bool PreLoadMazeDataIntoGameManager(string path)
+    {
+        try
+        {
+            if (!File.Exists(path)) return false;
+            string json = File.ReadAllText(path);
+            MazeData data = MazeDataSerializer.Deserialize(json);
+            if (data != null)
+            {
+                data.RestoreAfterDeserialization();
+                GameManager.Instance.LoadedMazeData = data;
+                GameManager.Instance.SetMazeSize(data.rows, data.columns);
+                Debug.Log($"Successfully pre-loaded MazeData: {path}");
+                return true;
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"Failed to pre-load maze data: {ex.Message}");
+        }
+        return false;
+    }
+
     private void OnOpenButtonClicked()
     {
-        if (selectedLevelInfo == null) return;
+        if (selectedLevelInfos.Count == 0) return;
 
-        if (selectedLevelInfo.IsFileValid())
+        // Verify all chosen files are still valid
+        List<string> verifiedPaths = new List<string>();
+        foreach (var info in selectedLevelInfos)
         {
-            selectedLevelInfo.UpdateDate();
-            SaveLevelInfoData();
-
-            // --- NEW: LOAD DATA INTO GAMEMANAGER BEFORE SCENE LOAD ---
-            try 
+            if (info.IsFileValid())
             {
-                string json = File.ReadAllText(selectedLevelInfo.FilePath);
-                MazeData data = MazeDataSerializer.Deserialize(json);
-                
-                if (data != null)
-                {
-                    data.RestoreAfterDeserialization(); // Reconstruct the 2D array
-                    GameManager.Instance.LoadedMazeData = data;
-                    GameManager.Instance.SetMazeSize(data.rows, data.columns);
-                    Debug.Log($"Successfully pre-loaded MazeData with {data.rows} rows.");
-                }
+                info.UpdateDate();
+                verifiedPaths.Add(info.FilePath);
             }
-            catch (Exception ex)
+            else
             {
-                Debug.LogError($"Failed to pre-load maze data: {ex.Message}");
+                popUpManager.ShowErrorPopUp($"File not found at {info.FilePath}");
+                return;
             }
-            // ---------------------------------------------------------
-
-            GameManager.Instance.CurrentCustomLevelPath = selectedLevelInfo.FilePath;
-            SceneManager.LoadScene("CustomLevel");
         }
-        else
+        SaveLevelInfoData();
+
+        // Pass the entire sequence list to the GameManager playlist queue
+        GameManager.Instance.SetupCustomLevelQueue(verifiedPaths);
+
+        // Advance to take out the first level of the playlist queue
+        if (GameManager.Instance.AdvanceToNextCustomLevel())
         {
-            popUpManager.ShowErrorPopUp($"File not found at {selectedLevelInfo.FilePath}");
+            if (PreLoadMazeDataIntoGameManager(GameManager.Instance.CurrentCustomLevelPath))
+            {
+                SceneManager.LoadScene("CustomLevel");
+            }
+            else
+            {
+                popUpManager.ShowErrorPopUp("Failed to open the first selected level file.");
+            }
         }
     }
 
     private void OnDeleteButtonClicked()
     {
-        if (selectedLevelInfo == null) return;
-        popUpManager.ShowDeleteConfirmation(selectedLevelInfo.LevelName, OnDeleteConfirmed);
+        if (selectedLevelInfos.Count == 0) return;
+        
+        // Confirm delete for the most recently selected item or first item
+        LevelInfoObject primaryTarget = selectedLevelInfos[selectedLevelInfos.Count - 1];
+        popUpManager.ShowDeleteConfirmation(primaryTarget.LevelName, OnDeleteConfirmed);
     }
 
     private void OnDeleteConfirmed(bool confirmed)
     {
-        if (confirmed && selectedLevelInfo != null)
+        if (confirmed && selectedLevelInfos.Count > 0)
         {
-            if (File.Exists(selectedLevelInfo.FilePath))
+            LevelInfoObject target = selectedLevelInfos[selectedLevelInfos.Count - 1];
+            if (File.Exists(target.FilePath))
             {
                 try
                 {
-                    File.Delete(selectedLevelInfo.FilePath);
+                    File.Delete(target.FilePath);
                 }
                 catch (Exception ex)
                 {
-                    Debug.LogWarning($"Failed to delete file {selectedLevelInfo.FilePath}: {ex.Message}");
+                    Debug.LogWarning($"Failed to delete file {target.FilePath}: {ex.Message}");
                 }
             }
 
-            levelInfoObjects.Remove(selectedLevelInfo);
-            Destroy(selectedLevelInfo.gameObject);
-            selectedLevelInfo = null;
+            levelInfoObjects.Remove(target);
+            selectedLevelInfos.Remove(target);
+            Destroy(target.gameObject);
             UpdateButtonInteractability();
             SaveLevelInfoData();
         }
     }
 
+    // --- UPDATED: TOGGLE MULTI-SELECTION LIST ENTRY ---
     public void OnLevelInfoSelected(LevelInfoObject levelInfo)
     {
-        if (selectedLevelInfo != null && selectedLevelInfo != levelInfo)
+        if (!selectedLevelInfos.Contains(levelInfo))
         {
-            selectedLevelInfo.Deselect();
+            selectedLevelInfos.Add(levelInfo);
+            Debug.Log($"Selected level added to playlist queue: {levelInfo.LevelName}. Total items: {selectedLevelInfos.Count}");
         }
-        selectedLevelInfo = levelInfo;
         UpdateButtonInteractability();
     }
 
     public void OnLevelInfoDeselected(LevelInfoObject levelInfo)
     {
-        if (selectedLevelInfo == levelInfo)
+        if (selectedLevelInfos.Contains(levelInfo))
         {
-            selectedLevelInfo = null;
-            UpdateButtonInteractability();
+            selectedLevelInfos.Remove(levelInfo);
+            Debug.Log($"Selected level removed from playlist queue: {levelInfo.LevelName}. Total items: {selectedLevelInfos.Count}");
         }
+        UpdateButtonInteractability();
     }
+    // --------------------------------------------------
 
     private void UpdateButtonInteractability()
     {
-        openButton.interactable = selectedLevelInfo != null;
-        deleteButton.interactable = selectedLevelInfo != null;
+        openButton.interactable = selectedLevelInfos.Count > 0;
+        deleteButton.interactable = selectedLevelInfos.Count > 0;
     }
 
     public void ShowErrorFromExternal(string message)
@@ -262,7 +295,6 @@ public class CustomLevelSelect : MonoBehaviour
     private string NormalizePath(string path)
     {
         if (string.IsNullOrEmpty(path)) return path;
-        // Replace forward slashes with backslashes for Windows
         return path.Replace('/', '\\').Replace("\\\\", "\\");
     }
 }

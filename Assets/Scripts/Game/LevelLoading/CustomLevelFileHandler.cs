@@ -28,7 +28,10 @@ public class CustomLevelFileHandler : MonoBehaviour
             {
                 FileOpenPicker openPicker = new FileOpenPicker();
                 openPicker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
-                openPicker.FileTypeFilter.Add(".json");
+                
+                // CHANGED: Replaced ".json" with your custom extension ".fitmaze"
+                openPicker.FileTypeFilter.Add(".fitmaze");
+                
                 StorageFile file = await openPicker.PickSingleFileAsync();
                 if (file != null)
                 {

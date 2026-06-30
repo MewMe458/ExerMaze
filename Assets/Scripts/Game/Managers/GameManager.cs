@@ -16,6 +16,31 @@ public class GameManager : MonoBehaviour
     public string CurrentLevelName { get; private set; }
     public string CurrentCustomLevelPath { get; set; }
 
+    // --- NEW: MULTI-LEVEL PLAYLIST QUEUE ---
+    public Queue<string> CustomLevelPlayQueue { get; private set; } = new Queue<string>();
+
+    public void SetupCustomLevelQueue(List<string> paths)
+    {
+        CustomLevelPlayQueue.Clear();
+        foreach (var path in paths)
+        {
+            CustomLevelPlayQueue.Enqueue(path);
+        }
+        Debug.Log($"GameManager: Queue initialized with {CustomLevelPlayQueue.Count} custom levels.");
+    }
+
+    public bool AdvanceToNextCustomLevel()
+    {
+        if (CustomLevelPlayQueue != null && CustomLevelPlayQueue.Count > 0)
+        {
+            CurrentCustomLevelPath = CustomLevelPlayQueue.Dequeue();
+            Debug.Log($"GameManager: Advanced to next custom level: {CurrentCustomLevelPath}");
+            return true;
+        }
+        return false;
+    }
+    // ---------------------------------------
+
     // --- UPDATED: HOLD LOADED MAZE DATA ---
     public MazeData LoadedMazeData { get; set; } // Now the 3D generator can access wall indices
     // --------------------------------------
