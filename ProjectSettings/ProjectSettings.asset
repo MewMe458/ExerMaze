@@ -901,9 +901,9 @@ PlayerSettings:
       InternetClient: True
       Proximity: True
   metroTargetDeviceFamilies: {}
-  metroFTAName: FitMaze
+  metroFTAName: fitmaze
   metroFTAFileTypes:
-  - contentType: fitmaze
+  - contentType: application/fitmaze
     fileType: .fitmaze
   metroProtocolName: 
   vcxProjDefaultLanguage: 

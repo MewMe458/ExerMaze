@@ -8,20 +8,18 @@ public class GoToSettingsPopup : MonoBehaviour
     [SerializeField] private GameObject goToSettingsPopup;
     [SerializeField] private Button okButton;
 
-    // Static variables persist across scene loads during gameplay
-    private static bool hasShownPopup = false;
+    private const string DIRECTORY_KEY = "ScreenshotDirectory";
 
     private void Start()
     {
-        // 2) Check if the popup has already been displayed during this game session
-        if (hasShownPopup)
+        // Check if the screenshot folder directory has already been configured/set
+        if (PlayerPrefs.HasKey(DIRECTORY_KEY))
         {
             goToSettingsPopup.SetActive(false);
         }
         else
         {
             goToSettingsPopup.SetActive(true);
-            hasShownPopup = true; // Mark it as shown so it won't appear again
         }
 
         // Assign the button listener dynamically if not set in inspector
@@ -37,7 +35,7 @@ public class GoToSettingsPopup : MonoBehaviour
         PlayerPrefs.SetInt("ScrollToScreenshotSection", 1);
         PlayerPrefs.Save();
 
-        // 1) Load the SettingsScene
+        // Load the SettingsScene
         SceneManager.LoadScene("SettingsScene");
     }
 }

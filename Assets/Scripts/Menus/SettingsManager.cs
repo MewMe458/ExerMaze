@@ -144,15 +144,11 @@ public class SettingsManager : MonoBehaviour
     #region Screenshot directory methods
     private string GetDefaultDirectory()
     {
-        // Environment.SpecialFolder.MyPictures targets C:\Users\<Name>\Pictures across standard Windows builds.
-        // Appending "FitMazeScreenshots" ensures it stays organized inside its own folder.
         string resultPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
             "FitMazeScreenshots"
         );
 
-        // UWP/WINMD build tracking environments can still read directory paths via standard System.IO if given permission,
-        // but if strictly trapped in WinMD standalone AppData, Environment fallback handles native path extraction.
 #if !ENABLE_WINMD_SUPPORT
         if (!Directory.Exists(resultPath))
         {
@@ -288,7 +284,6 @@ public class SettingsManager : MonoBehaviour
         PlayerPrefs.Save();
         UnityEngine.Debug.Log($"SettingsManager: Selected coordinate index {index}");
 
-        // Show/hide Edit and Delete buttons based on whether the selected coordinate is "Default"
         bool isDefaultCoordinate = index == 0 && GPXCoordinate.GetSavedCoordinates()[index].name == "Default";
         editNameButton.gameObject.SetActive(!isDefaultCoordinate);
         deleteButton.gameObject.SetActive(!isDefaultCoordinate);
@@ -300,7 +295,6 @@ public class SettingsManager : MonoBehaviour
         var selectedCoord = GPXCoordinate.GetSavedCoordinates()[currentEditIndex];
         nameInputField.text = selectedCoord.name;
 
-        // Hide dropdown and buttons, show edit UI
         SetEditMode(true);
     }
 
@@ -321,10 +315,9 @@ public class SettingsManager : MonoBehaviour
             UnityEngine.Debug.Log($"Updated coordinate name to: {newName} (Lat: {coord.latitude}, Lon: {coord.longitude})");
         }
 
-        // Exit edit mode and refresh UI
         SetEditMode(false);
         RefreshCoordinatesDropdown();
-        coordinatesDropdown.value = currentEditIndex; // Restore selection
+        coordinatesDropdown.value = currentEditIndex; 
     }
 
     private void DeleteCoordinate()
@@ -343,9 +336,8 @@ public class SettingsManager : MonoBehaviour
             GPXCoordinate.DeleteCoordinate(indexToDelete);
             UnityEngine.Debug.Log($"Deleted coordinate: {coord.name} (Lat: {coord.latitude}, Lon: {coord.longitude})");
 
-            // Refresh dropdown and reset selection
             RefreshCoordinatesDropdown();
-            coordinatesDropdown.value = Mathf.Min(indexToDelete, coordinates.Count - 2); // Adjust selection
+            coordinatesDropdown.value = Mathf.Min(indexToDelete, coordinates.Count - 2); 
         }
     }
 
@@ -379,15 +371,12 @@ public class SettingsManager : MonoBehaviour
             return;
         }
 
-        // Initialize toggles
         characterTrackingToggle.isOn = GPXCoordinate.CurrentTrackingMode == GPXCoordinate.TrackingMode.CharacterTracking;
         realLifeTrackingToggle.isOn = GPXCoordinate.CurrentTrackingMode == GPXCoordinate.TrackingMode.RealLifeTracking;
 
-        // Ensure toggles are in the toggle group
         characterTrackingToggle.group = trackingModeToggleGroup;
         realLifeTrackingToggle.group = trackingModeToggleGroup;
 
-        // Add toggle listeners
         characterTrackingToggle.onValueChanged.AddListener((isOn) =>
         {
             if (isOn)
@@ -403,11 +392,10 @@ public class SettingsManager : MonoBehaviour
             }
         });
 
-        // Initialize slider
         stepLengthSlider.minValue = 65f;
         stepLengthSlider.maxValue = 80f;
-        stepLengthSlider.value = GPXCoordinate.StepLength * 100f; // Convert meters to slider value
-        stepLengthSlider.wholeNumbers = true; // Ensure integer steps
+        stepLengthSlider.value = GPXCoordinate.StepLength * 100f; 
+        stepLengthSlider.wholeNumbers = true; 
         UpdateStepLengthText();
         stepLengthSlider.onValueChanged.AddListener((value) =>
         {
@@ -415,7 +403,6 @@ public class SettingsManager : MonoBehaviour
             UpdateStepLengthText();
         });
 
-        // Subscribe to settings changes
         GPXCoordinate.OnSettingsChanged += UpdateTrackingUI;
     }
 
@@ -423,7 +410,7 @@ public class SettingsManager : MonoBehaviour
     {
         characterTrackingToggle.isOn = GPXCoordinate.CurrentTrackingMode == GPXCoordinate.TrackingMode.CharacterTracking;
         realLifeTrackingToggle.isOn = GPXCoordinate.CurrentTrackingMode == GPXCoordinate.TrackingMode.RealLifeTracking;
-        stepLengthSlider.value = GPXCoordinate.StepLength * 100f; // Convert meters to slider value
+        stepLengthSlider.value = GPXCoordinate.StepLength * 100f; 
         UpdateStepLengthText();
     }
 
@@ -442,14 +429,12 @@ public class SettingsManager : MonoBehaviour
         SoundManager manager = SoundManager.Instance;
         if (manager == null) return;
 
-
         masterSlider.onValueChanged.RemoveAllListeners();
         bgmSlider.onValueChanged.RemoveAllListeners();
         uiSlider.onValueChanged.RemoveAllListeners();
         characterSlider.onValueChanged.RemoveAllListeners();
         effectSlider.onValueChanged.RemoveAllListeners();
         soundToggle.onValueChanged.RemoveAllListeners();
-
 
         masterSlider.value = manager.MasterVolume * 100;
         bgmSlider.value = manager.BGMVolume * 100;
@@ -459,7 +444,6 @@ public class SettingsManager : MonoBehaviour
         soundToggle.isOn = manager.IsSoundEnabled;
 
         UpdateSoundText();
-
 
         masterSlider.onValueChanged.AddListener(value =>
         {
