@@ -10,6 +10,7 @@ using UnityEngine;
 public class GPXFileSaver : MonoBehaviour
 {
     private GPXMovementTracker tracker;
+    private bool isSaving = false; // Flag to prevent multiple concurrent save prompts
 
     void Start()
     {
@@ -18,7 +19,7 @@ public class GPXFileSaver : MonoBehaviour
 
     private void FindTracker()
     {
-        tracker = FindAnyObjectByType<GPXMovementTracker>(); // Find the tracker dynamically
+        tracker = FindAnyObjectByType<GPXMovementTracker>();
 
         if (tracker == null)
         {
@@ -53,7 +54,12 @@ public class GPXFileSaver : MonoBehaviour
     public void SaveGPXFileUWP()
     {
     #if ENABLE_WINMD_SUPPORT
-        Debug.Log("UWP Folder Selection initiated...");
+        // Guard clause to prevent double-triggering if the player rapid-clicks
+        if (isSaving)
+        {
+            Debug.LogWarning("Save process already in progress.");
+            return;
+        }
 
         if (tracker == null)
         {
@@ -65,30 +71,38 @@ public class GPXFileSaver : MonoBehaviour
             }
         }
 
+        // Check if GameManager has valid data before opening the picker
+        if (GameManager.Instance == null)
+        {
+            Debug.LogError("GPXFileSaver: GameManager instance is missing.");
+            return;
+        }
+
         var charPoints = GameManager.Instance.SessionCharacterPoints;
         var realPoints = GameManager.Instance.SessionRealLifePoints;
 
         string characterGpx = GenerateGPX(charPoints, "Character Movement Session");
         string realLifeGpx = GenerateGPX(realPoints, "Real-Life Movement Session");
 
+        isSaving = true;
+
         UnityEngine.WSA.Application.InvokeOnUIThread(async () =>
         {
             try
             {
-                // Use FolderPicker instead of FileSavePicker
+                // FolderPicker prompts the user ONCE for a directory
                 FolderPicker folderPicker = new FolderPicker();
                 folderPicker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
-                folderPicker.FileTypeFilter.Add("*"); // Required for FolderPicker
+                folderPicker.FileTypeFilter.Add("*"); 
 
                 StorageFolder folder = await folderPicker.PickSingleFolderAsync();
 
                 if (folder != null)
                 {
-                    // Generate a base timestamp for the filenames
                     string timestamp = System.DateTime.Now.ToString("ddMMyy_HHmmss");
-                    string baseFileName = $"fitmaze{timestamp}";
+                    string baseFileName = $"fitmaze_{timestamp}";
 
-                    // Create the two files directly in the selected folder
+                    // Both files are generated seamlessly in the selected folder
                     StorageFile characterFile = await folder.CreateFileAsync(
                         baseFileName + "_character.gpx",
                         CreationCollisionOption.ReplaceExisting);
@@ -97,11 +111,10 @@ public class GPXFileSaver : MonoBehaviour
                         baseFileName + "_reallife.gpx",
                         CreationCollisionOption.ReplaceExisting);
 
-                    // Write the data to the files
                     await FileIO.WriteTextAsync(characterFile, characterGpx);
                     await FileIO.WriteTextAsync(realLifeFile, realLifeGpx);
 
-                    Debug.Log($"Successfully saved files to: {folder.Path}");
+                    Debug.Log($"Successfully saved both files to: {folder.Path}");
                 }
                 else
                 {
@@ -112,12 +125,16 @@ public class GPXFileSaver : MonoBehaviour
             {
                 Debug.LogError($"An error occurred during save: {ex.Message}\n{ex.StackTrace}");
             }
-
-            UnityEngine.WSA.Application.InvokeOnAppThread(() =>
+            finally
             {
-                Cursor.lockState = CursorLockMode.None;
-                Cursor.visible = true;
-            }, false);
+                // Ensure state is reset and UI thread unlocks the cursor back in Unity
+                UnityEngine.WSA.Application.InvokeOnAppThread(() =>
+                {
+                    isSaving = false;
+                    Cursor.lockState = CursorLockMode.None;
+                    Cursor.visible = true;
+                }, false);
+            }
         }, false);
     #else
         Debug.LogError("This file save method only works on UWP.");

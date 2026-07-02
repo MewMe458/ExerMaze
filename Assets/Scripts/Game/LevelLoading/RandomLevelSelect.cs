@@ -46,6 +46,12 @@ public class RandomLevelSelect : MonoBehaviour
 
     private void SelectLevel(int width, int depth)
     {
+        // Target folder structure created one time here upon layout preset selections
+        if (ScreenshotManager.Instance != null)
+        {
+            ScreenshotManager.Instance.CreateSessionSubfolder();
+        }
+
         GameManager.Instance.SetMazeSize(width, depth);
         SceneManager.LoadScene("RandomLevel");
     }

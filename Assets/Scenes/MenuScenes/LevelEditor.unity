@@ -2784,7 +2784,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 493eed9d06a927643a4ea293a93dc9b6, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 6b79df492e8289f4882707c343e90182, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -14587,12 +14587,12 @@ MonoBehaviour:
   starPrefab: {fileID: 6994740486974483924, guid: 4fb14de5f14f48846b24661ea66bdb3f, type: 3}
   slowPotionPrefab: {fileID: 662260492618992360, guid: 590376f9bbc52114f8af582a9146fc83, type: 3}
   teleporterPrefab: {fileID: 662260492618992360, guid: 5778de5d733c04845a9ea6d07f21ed22, type: 3}
-  dogIcon: {fileID: 21300000, guid: 6e4ee97210351914f908606f22621a61, type: 3}
-  boneIcon: {fileID: 21300000, guid: e28811b501cca314ba96469555b80846, type: 3}
-  shieldIcon: {fileID: 21300000, guid: 493eed9d06a927643a4ea293a93dc9b6, type: 3}
+  dogIcon: {fileID: 21300000, guid: 42b5823b1ff9e174f9d74b3f3b9d964d, type: 3}
+  boneIcon: {fileID: 21300000, guid: 6afa6cad97899564db0cfed314b57ca2, type: 3}
+  shieldIcon: {fileID: 21300000, guid: 743c4a67b694a184faed7beddb6dd38b, type: 3}
   starIcon: {fileID: 21300000, guid: fb50b52c05451474abb80520a031af71, type: 3}
-  slowPotionIcon: {fileID: 21300000, guid: 39af0f2224d96254189bb81cc2247c74, type: 3}
-  teleporterIcon: {fileID: 21300000, guid: 22d518884dac3f64f9f582172fb5be68, type: 3}
+  slowPotionIcon: {fileID: 21300000, guid: d59af81fe4fdde44fa11e04baea17a56, type: 3}
+  teleporterIcon: {fileID: 21300000, guid: c2e40b8e45d1b344fb3f95da25ba1148, type: 3}
 --- !u!114 &1848235404
 MonoBehaviour:
   m_ObjectHideFlags: 0

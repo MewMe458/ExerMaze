@@ -14,6 +14,7 @@ public class LevelInfoData
     public string size;
     public string mode;
     public string filePath;
+    public bool isCampaign;
 }
 
 [System.Serializable]
@@ -29,14 +30,13 @@ public class CustomLevelSelect : MonoBehaviour
     [SerializeField] private Button addButton;
     [SerializeField] private Button openButton;
     [SerializeField] private Button deleteButton;
+    [SerializeField] private Button addCampaignButton;
+    [SerializeField] private Button saveAsCampaign;
     [SerializeField] private CustomLevelPopUp popUpManager;
     [SerializeField] private CustomLevelFileHandler fileHandler;
 
     private List<LevelInfoObject> levelInfoObjects = new List<LevelInfoObject>();
-    
-    // --- UPDATED: MULTI-SELECTION LIST MANAGEMENT ---
     private List<LevelInfoObject> selectedLevelInfos = new List<LevelInfoObject>();
-    // ------------------------------------------------
 
     private string saveFilePath;
 
@@ -49,17 +49,24 @@ public class CustomLevelSelect : MonoBehaviour
         if (addButton == null) Debug.LogError("Add Button not assigned!");
         if (openButton == null) Debug.LogError("Open Button not assigned!");
         if (deleteButton == null) Debug.LogError("Delete Button not assigned!");
+        if (addCampaignButton == null) Debug.LogError("Add Campaign Button not assigned!");
+        if (saveAsCampaign == null) Debug.LogError("Save As Campaign Button not assigned!");
         if (popUpManager == null) Debug.LogError("PopUp Manager not assigned!");
         if (fileHandler == null) Debug.LogError("File Handler not assigned!");
 
         addButton.onClick.AddListener(OnAddButtonClicked);
         openButton.onClick.AddListener(OnOpenButtonClicked);
         deleteButton.onClick.AddListener(OnDeleteButtonClicked);
+        addCampaignButton.onClick.AddListener(OnAddCampaignButtonClicked);
+        saveAsCampaign.onClick.AddListener(OnSaveAsCampaignClicked);
 
         openButton.interactable = false;
         deleteButton.interactable = false;
+        saveAsCampaign.interactable = false;
 
         fileHandler.OnMazeLoadedWithPath += OnMazeFileLoadedWithPath;
+        fileHandler.OnCampaignLoadedWithPath += OnCampaignFileLoadedWithPath;
+        fileHandler.OnCampaignSavedWithPath += OnCampaignFileSavedWithPath; // NEW
     }
 
     void OnDestroy()
@@ -67,6 +74,8 @@ public class CustomLevelSelect : MonoBehaviour
         if (fileHandler != null)
         {
             fileHandler.OnMazeLoadedWithPath -= OnMazeFileLoadedWithPath;
+            fileHandler.OnCampaignLoadedWithPath -= OnCampaignFileLoadedWithPath;
+            fileHandler.OnCampaignSavedWithPath -= OnCampaignFileSavedWithPath; // NEW
         }
     }
 
@@ -94,7 +103,7 @@ public class CustomLevelSelect : MonoBehaviour
                 string normalizedPath = NormalizePath(data.filePath);
                 GameObject instance = Instantiate(levelInfoPrefab, contentParent);
                 LevelInfoObject levelInfo = instance.GetComponent<LevelInfoObject>();
-                levelInfo.Initialize(data.levelName, data.date, data.size, data.mode, normalizedPath, this);
+                levelInfo.Initialize(data.levelName, data.date, data.size, data.mode, normalizedPath, this, data.isCampaign);
                 levelInfoObjects.Add(levelInfo);
             }
         }
@@ -111,7 +120,8 @@ public class CustomLevelSelect : MonoBehaviour
                 date = levelInfo.Date,
                 size = levelInfo.Size,
                 mode = levelInfo.Mode,
-                filePath = levelInfo.FilePath
+                filePath = levelInfo.FilePath,
+                isCampaign = levelInfo.IsCampaign
             };
             dataList.levels.Add(data);
         }
@@ -122,6 +132,90 @@ public class CustomLevelSelect : MonoBehaviour
     private void OnAddButtonClicked()
     {
         fileHandler.LoadMazeFile();
+    }
+
+    private void OnAddCampaignButtonClicked()
+    {
+        fileHandler.LoadCampaignFile();
+    }
+
+    // UPDATED: Now generates JSON payload data and triggers native OS Save Dialog Picker
+    private void OnSaveAsCampaignClicked()
+    {
+        if (selectedLevelInfos.Count == 0) return;
+
+        CampaignData campaignData = new CampaignData();
+        foreach (var info in selectedLevelInfos)
+        {
+            if (!info.IsCampaign)
+            {
+                campaignData.levelPaths.Add(info.FilePath);
+            }
+        }
+
+        if (campaignData.levelPaths.Count == 0)
+        {
+            popUpManager.ShowErrorPopUp("Please select custom levels to form a campaign.");
+            return;
+        }
+
+        string defaultCampaignName = $"Campaign_{DateTime.Now:yyyyMMdd_HHmmss}";
+        string json = JsonUtility.ToJson(campaignData, true);
+
+        // Call fileHandler to trigger native UI thread dialogue window
+        fileHandler.SaveCampaignFile(json, defaultCampaignName);
+    }
+
+    // NEW: Asynchronous callback handling data alignment after the player chooses an export location
+    private void OnCampaignFileSavedWithPath(string externalPath, string json)
+    {
+        if (string.IsNullOrEmpty(externalPath) || string.IsNullOrEmpty(json))
+        {
+            // Operation was cancelled by user or encountered error handled by popup
+            return;
+        }
+
+        // Mirrors file locally in sandboxed persistentDataPath to guarantee loading accessibility later
+        string campaignFolder = Path.Combine(Application.persistentDataPath, "Campaigns");
+        if (!Directory.Exists(campaignFolder))
+        {
+            Directory.CreateDirectory(campaignFolder);
+        }
+
+        string fileName = Path.GetFileName(externalPath);
+        string localSandboxPath = NormalizePath(Path.Combine(campaignFolder, fileName));
+
+        try
+        {
+            // Save the secondary tracking copy locally
+            File.WriteAllText(localSandboxPath, json);
+
+            CampaignData campaignData = JsonUtility.FromJson<CampaignData>(json);
+            string campaignDisplayName = Path.GetFileNameWithoutExtension(externalPath);
+            string date = DateTime.Now.ToString("dd/MM/yyyy, h:mm tt");
+            string size = $"{campaignData.levelPaths?.Count ?? 0} Levels";
+            string mode = "Campaign";
+
+            // Spawn the UI listing element mapped to the stable local sandbox copy path
+            GameObject instance = Instantiate(levelInfoPrefab, contentParent);
+            LevelInfoObject levelInfo = instance.GetComponent<LevelInfoObject>();
+            levelInfo.Initialize(campaignDisplayName, date, size, mode, localSandboxPath, this, true);
+            levelInfoObjects.Add(levelInfo);
+            SaveLevelInfoData();
+
+            Debug.Log($"Campaign master file exported to: {externalPath}");
+            Debug.Log($"Campaign local runner track saved to: {localSandboxPath}");
+            
+            // Clear selections
+            foreach (var info in new List<LevelInfoObject>(selectedLevelInfos))
+            {
+                info.Deselect();
+            }
+        }
+        catch (Exception ex)
+        {
+            popUpManager.ShowErrorPopUp($"Failed to mirror campaign tracking data layout: {ex.Message}");
+        }
     }
 
     private void OnMazeFileLoadedWithPath(MazeData mazeData, string filePath)
@@ -136,9 +230,7 @@ public class CustomLevelSelect : MonoBehaviour
 
             string normalizedPath = NormalizePath(filePath);
 
-            bool fileExists = File.Exists(normalizedPath);
-            Debug.Log($"Checking file existence at {normalizedPath}: {fileExists}");
-            if (!fileExists)
+            if (!File.Exists(normalizedPath))
             {
                 popUpManager.ShowErrorPopUp($"Maze file not found at {normalizedPath}. Please try adding the file again.");
                 return;
@@ -157,20 +249,50 @@ public class CustomLevelSelect : MonoBehaviour
 
             GameObject instance = Instantiate(levelInfoPrefab, contentParent);
             LevelInfoObject levelInfo = instance.GetComponent<LevelInfoObject>();
-            levelInfo.Initialize(levelName, date, size, mode, normalizedPath, this);
+            levelInfo.Initialize(levelName, date, size, mode, normalizedPath, this, false);
             levelInfoObjects.Add(levelInfo);
             SaveLevelInfoData();
         }
     }
 
-    // Helper to extract and safely load MazeData directly from a file path
+    private void OnCampaignFileLoadedWithPath(CampaignData campaignData, string filePath)
+    {
+        if (campaignData != null)
+        {
+            if (string.IsNullOrEmpty(filePath))
+            {
+                popUpManager.ShowErrorPopUp("Failed to retrieve file path for the loaded campaign.");
+                return;
+            }
+
+            string normalizedPath = NormalizePath(filePath);
+
+            if (levelInfoObjects.Exists(level => level.FilePath == normalizedPath))
+            {
+                popUpManager.ShowErrorPopUp("This campaign file is already added.");
+                return;
+            }
+
+            string campaignName = Path.GetFileNameWithoutExtension(normalizedPath);
+            string date = DateTime.Now.ToString("dd/MM/yyyy, h:mm tt");
+            string size = $"{campaignData.levelPaths?.Count ?? 0} Levels";
+            string mode = "Campaign";
+
+            GameObject instance = Instantiate(levelInfoPrefab, contentParent);
+            LevelInfoObject levelInfo = instance.GetComponent<LevelInfoObject>();
+            levelInfo.Initialize(campaignName, date, size, mode, normalizedPath, this, true);
+            levelInfoObjects.Add(levelInfo);
+            SaveLevelInfoData();
+        }
+    }
+
     private bool PreLoadMazeDataIntoGameManager(string path)
     {
         try
         {
             if (!File.Exists(path)) return false;
             string json = File.ReadAllText(path);
-            MazeData data = MazeDataSerializer.Deserialize(json);
+            MazeData data = JsonUtility.FromJson<MazeData>(json);
             if (data != null)
             {
                 data.RestoreAfterDeserialization();
@@ -191,27 +313,70 @@ public class CustomLevelSelect : MonoBehaviour
     {
         if (selectedLevelInfos.Count == 0) return;
 
-        // Verify all chosen files are still valid
         List<string> verifiedPaths = new List<string>();
         foreach (var info in selectedLevelInfos)
         {
-            if (info.IsFileValid())
+            if (info.IsCampaign)
             {
-                info.UpdateDate();
-                verifiedPaths.Add(info.FilePath);
+                if (File.Exists(info.FilePath))
+                {
+                    try
+                    {
+                        string json = File.ReadAllText(info.FilePath);
+                        CampaignData campaignData = JsonUtility.FromJson<CampaignData>(json);
+                        if (campaignData != null && campaignData.levelPaths != null)
+                        {
+                            foreach (string path in campaignData.levelPaths)
+                            {
+                                string normPath = NormalizePath(path);
+                                if (File.Exists(normPath))
+                                {
+                                    verifiedPaths.Add(normPath);
+                                }
+                                else
+                                {
+                                    popUpManager.ShowErrorPopUp($"Campaign custom level file not found at: {normPath}");
+                                    return;
+                                }
+                            }
+                            info.UpdateDate();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        popUpManager.ShowErrorPopUp($"Failed to read campaign file data sequence: {ex.Message}");
+                        return;
+                    }
+                }
+                else
+                {
+                    popUpManager.ShowErrorPopUp($"Campaign reference file not found at {info.FilePath}");
+                    return;
+                }
             }
             else
             {
-                popUpManager.ShowErrorPopUp($"File not found at {info.FilePath}");
-                return;
+                if (info.IsFileValid())
+                {
+                    info.UpdateDate();
+                    verifiedPaths.Add(info.FilePath);
+                }
+                else
+                {
+                    popUpManager.ShowErrorPopUp($"File not found at {info.FilePath}");
+                    return;
+                }
             }
         }
         SaveLevelInfoData();
 
-        // Pass the entire sequence list to the GameManager playlist queue
+        if (ScreenshotManager.Instance != null)
+        {
+            ScreenshotManager.Instance.CreateSessionSubfolder();
+        }
+
         GameManager.Instance.SetupCustomLevelQueue(verifiedPaths);
 
-        // Advance to take out the first level of the playlist queue
         if (GameManager.Instance.AdvanceToNextCustomLevel())
         {
             if (PreLoadMazeDataIntoGameManager(GameManager.Instance.CurrentCustomLevelPath))
@@ -229,7 +394,6 @@ public class CustomLevelSelect : MonoBehaviour
     {
         if (selectedLevelInfos.Count == 0) return;
         
-        // Confirm delete for the most recently selected item or first item
         LevelInfoObject primaryTarget = selectedLevelInfos[selectedLevelInfos.Count - 1];
         popUpManager.ShowDeleteConfirmation(primaryTarget.LevelName, OnDeleteConfirmed);
     }
@@ -259,13 +423,12 @@ public class CustomLevelSelect : MonoBehaviour
         }
     }
 
-    // --- UPDATED: TOGGLE MULTI-SELECTION LIST ENTRY ---
     public void OnLevelInfoSelected(LevelInfoObject levelInfo)
     {
         if (!selectedLevelInfos.Contains(levelInfo))
         {
             selectedLevelInfos.Add(levelInfo);
-            Debug.Log($"Selected level added to playlist queue: {levelInfo.LevelName}. Total items: {selectedLevelInfos.Count}");
+            Debug.Log($"Selected item added to playlist queue: {levelInfo.LevelName}. Total items: {selectedLevelInfos.Count}");
         }
         UpdateButtonInteractability();
     }
@@ -275,16 +438,27 @@ public class CustomLevelSelect : MonoBehaviour
         if (selectedLevelInfos.Contains(levelInfo))
         {
             selectedLevelInfos.Remove(levelInfo);
-            Debug.Log($"Selected level removed from playlist queue: {levelInfo.LevelName}. Total items: {selectedLevelInfos.Count}");
+            Debug.Log($"Selected item removed from playlist queue: {levelInfo.LevelName}. Total items: {selectedLevelInfos.Count}");
         }
         UpdateButtonInteractability();
     }
-    // --------------------------------------------------
 
     private void UpdateButtonInteractability()
     {
-        openButton.interactable = selectedLevelInfos.Count > 0;
-        deleteButton.interactable = selectedLevelInfos.Count > 0;
+        bool elementsSelected = selectedLevelInfos.Count > 0;
+        openButton.interactable = elementsSelected;
+        deleteButton.interactable = elementsSelected;
+        
+        bool canSaveCampaign = false;
+        if (elementsSelected)
+        {
+            canSaveCampaign = true;
+            foreach (var info in selectedLevelInfos)
+            {
+                if (info.IsCampaign) { canSaveCampaign = false; break; }
+            }
+        }
+        saveAsCampaign.interactable = canSaveCampaign;
     }
 
     public void ShowErrorFromExternal(string message)

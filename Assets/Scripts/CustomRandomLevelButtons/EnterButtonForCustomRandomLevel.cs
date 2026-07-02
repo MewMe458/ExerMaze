@@ -35,6 +35,12 @@ public class EnterButtonForCustomRandomLevel : MonoBehaviour
             return;
         }
 
+        // Target folder structure created one time here upon submission validation
+        if (ScreenshotManager.Instance != null)
+        {
+            ScreenshotManager.Instance.CreateSessionSubfolder();
+        }
+
         GameManager.Instance.SetMazeSize(width, depth);
         SceneManager.LoadScene("RandomLevel");
     }

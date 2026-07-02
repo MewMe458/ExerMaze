@@ -905,6 +905,8 @@ PlayerSettings:
   metroFTAFileTypes:
   - contentType: application/fitmaze
     fileType: .fitmaze
+  - contentType: application/fitcampaign
+    fileType: .fitcampaign
   metroProtocolName: 
   vcxProjDefaultLanguage: 
   XboxOneProductId: 

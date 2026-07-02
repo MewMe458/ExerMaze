@@ -15,6 +15,7 @@ public class LevelInfoObject : MonoBehaviour
     private TMP_Text modeText;
     private Button selectButton;
     private Outline outline;
+    private Image buttonImage;
 
     private string levelName;
     private string date;
@@ -23,18 +24,21 @@ public class LevelInfoObject : MonoBehaviour
     private string filePath;
     private CustomLevelSelect manager;
     private bool isSelected = false;
+    private bool isCampaign = false;
 
     public string LevelName => levelName;
     public string Date => date;
     public string Size => size;
     public string Mode => mode;
     public string FilePath => filePath;
+    public bool IsCampaign => isCampaign;
 
     void Awake()
     {
         // Fetch components dynamically
         selectButton = GetComponent<Button>();
         outline = GetComponent<Outline>();
+        buttonImage = GetComponent<Image>();
         levelNameText = transform.Find("LevelNameText")?.GetComponent<TMP_Text>();
         dateText = transform.Find("DateText")?.GetComponent<TMP_Text>();
         sizeText = transform.Find("SizeText")?.GetComponent<TMP_Text>();
@@ -51,7 +55,7 @@ public class LevelInfoObject : MonoBehaviour
         outline.enabled = false; // Outline off by default
     }
 
-    public void Initialize(string levelName, string date, string size, string mode, string filePath, CustomLevelSelect manager)
+    public void Initialize(string levelName, string date, string size, string mode, string filePath, CustomLevelSelect manager, bool isCampaign = false)
     {
         this.levelName = levelName;
         this.date = date;
@@ -59,8 +63,22 @@ public class LevelInfoObject : MonoBehaviour
         this.mode = mode;
         this.filePath = filePath;
         this.manager = manager;
+        this.isCampaign = isCampaign;
 
-        levelNameText.text = levelName;
+        if (isCampaign)
+        {
+            levelNameText.text = $"{levelName} (Campaign)";
+            if (buttonImage != null)
+            {
+                // Set button color to light blue (#ADD8E6)
+                buttonImage.color = new Color(0.678f, 0.847f, 0.902f, 1f);
+            }
+        }
+        else
+        {
+            levelNameText.text = levelName;
+        }
+
         dateText.text = date;
         sizeText.text = size;
         modeText.text = mode;

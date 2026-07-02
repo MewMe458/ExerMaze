@@ -7,7 +7,7 @@ public class GPXMovementTracker : MonoBehaviour
 {
     private double initialLatitude;
     private double initialLongitude;
-    private float movementScale = 0.000009f; // Scale for Unity units to lat/lon, no duplicate
+    private float movementScale = 0.000009f; 
     private List<(double latitude, double longitude, float elevation, string timestamp)> characterTrackPoints 
         = new List<(double, double, float, string)>();
 
@@ -18,12 +18,15 @@ public class GPXMovementTracker : MonoBehaviour
 
     private double realLifeLatitude;
     private double realLifeLongitude;
-    private Vector3 lastPosition; // testing duplicate
+    private Vector3 lastPosition; 
 
-    private int stepCount = 0; // For real-life tracking, no duplicate
+    private int stepCount = 0; 
 
+    // Public Getters for both tracking systems
     public double GetCurrentLatitude() => characterLatitude;
     public double GetCurrentLongitude() => characterLongitude;
+    public double GetRealLifeLatitude() => realLifeLatitude;
+    public double GetRealLifeLongitude() => realLifeLongitude;
 
     void Start()
     {
@@ -38,7 +41,7 @@ public class GPXMovementTracker : MonoBehaviour
         initialLatitude = GPXCoordinate.InitialLatitude;
         initialLongitude = GPXCoordinate.InitialLongitude;
 
-        ResetTracking(); // Always reset when the level starts
+        ResetTracking(); 
     }
 
     private void OnDestroy()
@@ -71,14 +74,12 @@ public class GPXMovementTracker : MonoBehaviour
 
     public void ResetTracking()
     {
-        // ONLY clear if this is a brand new session start
         if (!GameManager.Instance.IsContinuingSession)
         {
-            // --- NEW SESSION ---
             characterTrackPoints.Clear();
             realLifeTrackPoints.Clear();
             stepCount = 0;
-            GameManager.Instance.ClearSessionData(); // Ensure the master lists are empty
+            GameManager.Instance.ClearSessionData(); 
 
             initialLatitude = GPXCoordinate.InitialLatitude;
             initialLongitude = GPXCoordinate.InitialLongitude;
@@ -91,13 +92,10 @@ public class GPXMovementTracker : MonoBehaviour
         }
         else
         {
-            // --- CONTINUING SESSION ---
-            // Initialize local lists with what we already have in the GameManager master list
             characterTrackPoints = new List<(double, double, float, string)>(GameManager.Instance.SessionCharacterPoints);
             realLifeTrackPoints = new List<(double, double, float, string)>(GameManager.Instance.SessionRealLifePoints);
             stepCount = GameManager.Instance.AccumulatedSteps;
 
-            // Resume from the LAST known coordinates so the GPX path connects seamlessly
             if (characterTrackPoints.Count > 0)
             {
                 var lastChar = characterTrackPoints[characterTrackPoints.Count - 1];
@@ -112,10 +110,8 @@ public class GPXMovementTracker : MonoBehaviour
             }
         }
 
-        // Set the baseline Unity position for the new scene
         lastPosition = transform.position; 
 
-        // Add the first point of this new scene
         AddTrackPoint(characterTrackPoints, characterLatitude, characterLongitude);
         AddTrackPoint(realLifeTrackPoints, realLifeLatitude, realLifeLongitude);
     }
@@ -125,14 +121,6 @@ public class GPXMovementTracker : MonoBehaviour
         if (GameManager.Instance.CurrentState == GameManager.GameState.InGame &&
             FindAnyObjectByType<LevelManager>().CurrentLevelState == LevelManager.LevelState.Playing)
         {
-            // if (GPXCoordinate.CurrentTrackingMode == GPXCoordinate.TrackingMode.CharacterTracking)
-            // {
-            //     TrackCharacterMovement();
-            // }
-            // else
-            // {
-            //     TrackRealLifeMovement();
-            // }
             TrackCharacterMovement();
             TrackRealLifeMovement();
         }
@@ -177,7 +165,6 @@ public class GPXMovementTracker : MonoBehaviour
         
         list.Add(point);
 
-        // ALSO update the Master List in GameManager safely
         if (list == characterTrackPoints)
         {
             if (!GameManager.Instance.SessionCharacterPoints.Contains(point))

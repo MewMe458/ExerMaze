@@ -16,12 +16,12 @@ public class ContinueChoice : MonoBehaviour
         // Clear the custom level references in GameManager
         if (GameManager.Instance != null)
         {
-            GameManager.Instance.ClearCurrentLevelName();        
-            GameManager.Instance.ClearCurrentCustomLevelPath();  
+            GameManager.Instance.ClearCurrentLevelName();       
+            GameManager.Instance.ClearCurrentCustomLevelPath(); 
         }
 
         // Load the RandomLevel scene again
-        SceneManager.LoadScene("RandomLevel"); 
+        SceneManager.LoadScene("RandomLevel");
     }
 
     public void OnClickStop()
@@ -29,8 +29,14 @@ public class ContinueChoice : MonoBehaviour
         // 2. Explicitly tell GameManager the session is over
         GameManager.Instance.IsContinuingSession = false;
 
+        // 3. Clear out session configurations inside ScreenshotManager completely
+        if (ScreenshotManager.Instance != null)
+        {
+            ScreenshotManager.Instance.ResetSessionTracking();
+        }
+
         // Unload this prompt and show the final summary screen
         SceneManager.UnloadSceneAsync("ContinueChoiceScene");
-        SceneManager.LoadScene("LevelCompleteMenu", LoadSceneMode.Additive); 
+        SceneManager.LoadScene("LevelCompleteMenu", LoadSceneMode.Additive);
     }
 }
