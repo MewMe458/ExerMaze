@@ -58,7 +58,7 @@ public class ScreenshotManager : MonoBehaviour
     public void InitializeScreenshotFolder()
     {
 #if ENABLE_WINMD_SUPPORT
-        defaultDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "FitMazeScreenshots");
+        defaultDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "FitMazeScreenshots");
         if (!Directory.Exists(defaultDirectory))
         {
             Directory.CreateDirectory(defaultDirectory);
