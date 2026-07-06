@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.IO;
@@ -6,23 +7,42 @@ public class CustomLevelLoader : LevelLoader
 {
     void Start()
     {
-        // Get level identifier from GameManager
         string levelIdentifier = GameManager.Instance.CurrentCustomLevelPath;
         Debug.Log($"CustomLevelLoader.Start: CurrentCustomLevelPath = {levelIdentifier}");
         if (string.IsNullOrEmpty(levelIdentifier))
         {
             Debug.LogError("GameManager.CurrentCustomLevelPath not set");
-            SceneManager.LoadScene("CustomLevelSelect"); // Fallback
+            SceneManager.LoadScene("CustomLevelSelect"); 
             return;
         }
 
-        // Load and instantiate level
         LoadAndInstantiate(levelIdentifier);
+
+        // If loading from save file, restore positions after base level completes generating
+        if (MazeSaveHolder.HasLoadedData)
+        {
+            StartCoroutine(RestoreSavedState());
+        }
+    }
+
+    private IEnumerator RestoreSavedState()
+    {
+        yield return new WaitForEndOfFrame();
+        if (MazeSaveHolder.LoadedData?.playerData != null)
+        {
+            GameObject player = GameObject.FindGameObjectWithTag("Player");
+            if (player != null)
+            {
+                player.transform.position = MazeSaveHolder.LoadedData.playerData.position.ToVector3();
+                player.transform.rotation = Quaternion.Euler(MazeSaveHolder.LoadedData.playerData.rotation.ToVector3());
+            }
+        }
+        MazeSaveHolder.HasLoadedData = false;
     }
 
     protected override MazeData LoadLevel(string levelIdentifier)
     {
-        string filePath = levelIdentifier; // Use path as identifier
+        string filePath = levelIdentifier; 
         if (string.IsNullOrEmpty(filePath))
         {
             Debug.LogError("CustomLevelLoader: CurrentCustomLevelPath is null or empty");
@@ -30,7 +50,6 @@ public class CustomLevelLoader : LevelLoader
             return null;
         }
 
-        // Normalize path for consistency
         string normalizedPath = NormalizePath(filePath);
         Debug.Log($"CustomLevelLoader: Loading maze from {normalizedPath}");
 
@@ -66,18 +85,11 @@ public class CustomLevelLoader : LevelLoader
         if (mazeData == null) return;
 
         ClearLevel();
-
-        // 1. Structural assembly (floors, walls, goal points)
         base.InstantiateLevel(mazeData);
-
-        // 2. Custom Element Generation Pipeline runs via our override below
-        InstantiateElements(mazeData); // 🔥 FIX: Uncommented this line so elements actually spawn
-
-        // 3. Bake the AI navigation surface layout
+        InstantiateElements(mazeData); 
         BakeNavMesh();
     }
 
-    // 🛠️ FIX: Overriding this method forces the script to read positions directly from the JSON fields.
     protected override void InstantiateElements(MazeData mazeData)
     {
         if (mazeData == null || mazeData.elements == null) return;
@@ -91,7 +103,6 @@ public class CustomLevelLoader : LevelLoader
         {
             if (element == null) continue;
 
-            // Fetch the prefab using your string mapping logic
             GameObject prefab = elementPrefabMapping.GetPrefabForType(element.elementType);
             if (prefab == null)
             {
@@ -99,28 +110,23 @@ public class CustomLevelLoader : LevelLoader
                 continue;
             }
 
-            // Calculate precise 3D spatial alignment offsets directly from saved coordinates
             float posX = element.position.y * cellSize;
             float posZ = (mazeData.rows - 1 - element.position.x) * cellSize;
             
-            // Retain original prefab height alignment configuration safely
             Vector3 position = new Vector3(posX, prefab.transform.position.y, posZ);
 
             GameObject obj = Instantiate(prefab, position, prefab.transform.rotation, transform);
             obj.name = $"{element.elementType}_{element.position.x}_{element.position.y}";
-            obj.tag = "LevelObject"; // Ensure proper clean up tracking tags are applied
+            obj.tag = "LevelObject"; 
 
             Debug.Log($"CustomLevelLoader: Successfully spawned element '{element.elementType}' at calculated 3D coordinates: {position}");
 
-            // Account for custom Dog parameter configuration variants ("Dog" and "DogNPC")
             if ((element.elementType == "Dog" || element.elementType == "DogNPC") && element.detection > 0f)
             {
-                // Try fetching chase components dynamically across common variants
                 var dogChase = obj.GetComponent<DogNPCChase>();
                 if (dogChase != null)
                 {
                     dogChase.DetectionSize = element.detection / 2.0f * cellSize;
-                    Debug.Log($"CustomLevelLoader: Configured Dog detection size radius boundary to: {dogChase.DetectionSize}");
                 }
             }
         }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Unity.AI.Navigation;
 using Unity.Collections;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class AutoMG3D_1010 : MonoBehaviour
 {
@@ -919,6 +920,7 @@ public class AutoMG3D_1010 : MonoBehaviour
     public SaveMazeData GetMazeSaveData()
     {
         SaveMazeData data = new SaveMazeData();
+        data.sceneName = SceneManager.GetActiveScene().name; // <-- NEW LINE ADAPTATION
         data.width = this.width;
         data.depth = this.depth;
 

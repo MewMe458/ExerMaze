@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -5,18 +6,37 @@ public class DefaultLevelLoader : LevelLoader
 {
     void Start()
     {
-        // Get level name from GameManager
         string levelName = GameManager.Instance.CurrentLevelName;
         Debug.Log($"DefaultLevelLoader.Start: CurrentLevelName = {levelName}");
         if (string.IsNullOrEmpty(levelName))
         {
             Debug.LogError("GameManager.CurrentLevelName not set");
-            SceneManager.LoadScene("LevelSelectMenu"); // Fallback
+            SceneManager.LoadScene("LevelSelectMenu"); 
             return;
         }
 
-        // Load and instantiate level
         LoadAndInstantiate(levelName);
+
+        // If loading from save file, restore positions after base level completes generating
+        if (MazeSaveHolder.HasLoadedData)
+        {
+            StartCoroutine(RestoreSavedState());
+        }
+    }
+
+    private IEnumerator RestoreSavedState()
+    {
+        yield return new WaitForEndOfFrame(); 
+        if (MazeSaveHolder.LoadedData?.playerData != null)
+        {
+            GameObject player = GameObject.FindGameObjectWithTag("Player");
+            if (player != null)
+            {
+                player.transform.position = MazeSaveHolder.LoadedData.playerData.position.ToVector3();
+                player.transform.rotation = Quaternion.Euler(MazeSaveHolder.LoadedData.playerData.rotation.ToVector3());
+            }
+        }
+        MazeSaveHolder.HasLoadedData = false; 
     }
 
     protected override MazeData LoadLevel(string levelIdentifier)

@@ -67,7 +67,6 @@ public class LevelManager : MonoBehaviour
 
     private void Start()
     {
-        //StartCoroutine(BeginCountdown()); // For testing without BLE connection
         StartCoroutine(CheckBluetoothConnection());
     }
 
@@ -111,7 +110,7 @@ public class LevelManager : MonoBehaviour
     private void ReturnToMenu()
     {
         Debug.Log("LevelManager: Returning to Menu");
-        uiManager.HideBluetoothConnectCheckUI(); // Hide UI via LevelUIManager
+        uiManager.HideBluetoothConnectCheckUI(); 
         GameManager.Instance.ClearCurrentLevelName();
         GameManager.Instance.ClearCurrentCustomLevelPath();
         GameManager.Instance.SetGameState(GameManager.GameState.Menu);
@@ -130,7 +129,7 @@ public class LevelManager : MonoBehaviour
             ReturnToMenu();
             yield break;
         }
-        BLEManager.Instance.bleConnect.UpdateSensorStateOnBLE("stop"); // Ensure sensors are stopped before countdown
+        BLEManager.Instance.bleConnect.UpdateSensorStateOnBLE("stop"); 
         Debug.Log("LevelManager: Bluetooth connected, starting countdown");
         CurrentLevelState = LevelState.Countdown;
         StartCoroutine(BeginCountdown());
@@ -148,16 +147,14 @@ public class LevelManager : MonoBehaviour
         GameManager.Instance.SetGameState(GameManager.GameState.InGame);
         if (BLEManager.Instance != null && BLEManager.Instance.bleConnect != null)
         {
-            BLEManager.Instance.bleConnect.UpdateSensorStateOnBLE("start"); // Enable sensors after countdown
+            BLEManager.Instance.bleConnect.UpdateSensorStateOnBLE("start"); 
         }
 
-        // Reset the tracking to have first point at starting position
         GPXMovementTracker tracker = FindAnyObjectByType<GPXMovementTracker>();
         if (tracker != null)
         {
             tracker.ResetTracking();
         }
-
         else
         {
             Debug.LogError("LevelManager: BLEManager or BLEConnect not found, sensors will not be started");
@@ -315,44 +312,44 @@ public class LevelManager : MonoBehaviour
 
         if (levelEventSystem != null)
         {
-            levelEventSystem.enabled = false; // Disable main level EventSystem
+            levelEventSystem.enabled = false; 
             Debug.Log("Disabled level EventSystem for PauseMenu");
         }
         SceneManager.LoadScene(pauseMenuScene, LoadSceneMode.Additive);
         previousLevelState = CurrentLevelState;
         CurrentLevelState = LevelState.Paused;
-        Cursor.visible = true; // Show cursor
-        Cursor.lockState = CursorLockMode.None; // Unlock cursor
+        Cursor.visible = true; 
+        Cursor.lockState = CursorLockMode.None; 
         if (timer != null)
         {
             timer.StopTimer();
         }
-        Time.timeScale = 0f; // Stop time when paused
+        Time.timeScale = 0f; 
         if (BLEManager.Instance != null && BLEManager.Instance.bleConnect != null)
         {
-            BLEManager.Instance.bleConnect.UpdateSensorStateOnBLE("stop"); // Pause sensors
+            BLEManager.Instance.bleConnect.UpdateSensorStateOnBLE("stop"); 
         }
         Debug.Log("Game Paused");
     }
 
     public void ResumeGame()
     {
-        Cursor.visible = false; // Hide cursor
-        Cursor.lockState = CursorLockMode.None; // Ensure consistent state
+        Cursor.visible = false; 
+        Cursor.lockState = CursorLockMode.None; 
         SceneManager.UnloadSceneAsync(pauseMenuScene);
         CurrentLevelState = previousLevelState;
         if (timer != null)
         {
             timer.StartTimer();
         }
-        Time.timeScale = 1f; // Resume time
+        Time.timeScale = 1f; 
         if (BLEManager.Instance != null && BLEManager.Instance.bleConnect != null)
         {
-            BLEManager.Instance.bleConnect.UpdateSensorStateOnBLE("start"); // Resume sensors
+            BLEManager.Instance.bleConnect.UpdateSensorStateOnBLE("start"); 
         }
         if (levelEventSystem != null)
         {
-            levelEventSystem.enabled = true; // Re-enable main level EventSystem
+            levelEventSystem.enabled = true; 
             Debug.Log("Re-enabled main level EventSystem");
         }
         Debug.Log("Game Resumed");
@@ -360,7 +357,6 @@ public class LevelManager : MonoBehaviour
 
     public void RestartLevel()
     {
-        // Preserve CurrentLevelName or CurrentCustomLevelPath
         string levelName = GameManager.Instance.CurrentLevelName;
         string customLevelPath = GameManager.Instance.CurrentCustomLevelPath;
         Debug.Log($"LevelManager.RestartLevel: CurrentLevelName = {levelName}, CurrentCustomLevelPath = {customLevelPath}");
@@ -382,33 +378,29 @@ public class LevelManager : MonoBehaviour
         {
             timer.ResetTimer();
         }
-        Time.timeScale = 1f; // Ensure time is running again
+        Time.timeScale = 1f; 
 
-        // Unload pause menu if it's loaded
         if (SceneManager.GetSceneByName(pauseMenuScene).isLoaded)
         {
             SceneManager.UnloadSceneAsync(pauseMenuScene);
         }
 
-        // Unload level complete menu if it's loaded
         if (SceneManager.GetSceneByName(completeMenuScene).isLoaded)
         {
             SceneManager.UnloadSceneAsync(completeMenuScene);
         }
 
-        dogBiteCount = 0; // Reset bite count
-        dogTamedCount = 0; // Reset tamed count
+        dogBiteCount = 0; 
+        dogTamedCount = 0; 
         if (uiManager != null)
         {
             uiManager.UpdateDogBiteCount(dogBiteCount);
             uiManager.UpdateDogTamedCount(dogTamedCount);
         }
 
-        // Reload current level
         string currentScene = SceneManager.GetActiveScene().name;
         SceneManager.LoadScene(currentScene);
 
-        // Reset GPX tracker after scene reload
         GPXMovementTracker tracker = FindAnyObjectByType<GPXMovementTracker>();
         if (tracker != null)
         {
@@ -418,7 +410,7 @@ public class LevelManager : MonoBehaviour
         Debug.Log($"Level Restarted: {currentScene}");
     }
 
-// --- UPDATED: SEQUENTIAL LEVEL PROGRESSION LOGIC WITH GPX ACCUMULATION ---
+    // --- UPDATED: SEQUENTIAL LEVEL PROGRESSION LOGIC WITH GPX ACCUMULATION ---
     public void CompleteLevel()
     {
         if (CurrentLevelState != LevelState.Playing)
@@ -441,7 +433,8 @@ public class LevelManager : MonoBehaviour
             Time.timeScale = 0f;
             SceneManager.LoadScene("ContinueChoiceScene", LoadSceneMode.Additive);
         }
-        else if (activeSceneName == "CustomLevel" && GameManager.Instance.CustomLevelPlayQueue.Count > 0)
+        // FIX: Transitioned condition to check the new list and index tracker instead of the old queue
+        else if (activeSceneName == "CustomLevel" && GameManager.Instance.CustomLevelQueue != null && GameManager.Instance.CurrentCustomLevelIndex + 1 < GameManager.Instance.CustomLevelQueue.Count)
         {
             // FLAG ACCUMULATION: Ensure the next custom level treats this as an ongoing session
             GameManager.Instance.IsContinuingSession = true;
@@ -522,10 +515,9 @@ public class LevelManager : MonoBehaviour
         int finalScore = baseScore - dogBitePenalty + dogTamedBonus + timeBonus + score;
 
         Debug.Log($"CalculateFinalScore: Base={baseScore}, Bites={dogBitePenalty}, Tamed={dogTamedBonus}, TimeBonus={timeBonus}, SpecialItems={score}, Final={finalScore}");
-        return Mathf.Max(baseScore, finalScore); // Minimum will always be base score no matter how much the penalty is
+        return Mathf.Max(baseScore, finalScore); 
     }
 
-    // Replace GetFinalScore
     public int GetFinalScore()
     {
         return CalculateFinalScore();
@@ -542,7 +534,7 @@ public class LevelManager : MonoBehaviour
 
     private IEnumerator RestoreCursorAfterFocus()
     {
-        yield return new WaitForSecondsRealtime(0.1f); // Slightly longer for stability
+        yield return new WaitForSecondsRealtime(0.1f); 
         
         bool isUIActive = (CurrentLevelState == LevelState.Paused || CurrentLevelState == LevelState.Completed);
         

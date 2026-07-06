@@ -14,51 +14,25 @@ public class LevelSelectButtons : MonoBehaviour
 {
     [SerializeField] private Button defaultLevelButton;
     [SerializeField] private Button customLevelButton;
-
     [SerializeField] private Button randomLevelButton;
     [SerializeField] private Button loadLevelButton;
 
     void Awake()
     {
-        if (defaultLevelButton != null)
-            defaultLevelButton.onClick.AddListener(LoadDefaultLevelSelect);
-        else
-            Debug.LogWarning("Default level button not assigned");
-
-        if (customLevelButton != null)
-            customLevelButton.onClick.AddListener(LoadCustomLevelSelect);
-        else
-            Debug.LogWarning("Custom level button not assigned");
-        if (randomLevelButton != null)
-            randomLevelButton.onClick.AddListener(LoadRandomLevelSelect);
-        else
-            Debug.LogWarning("Random level button not assigned");
-        if (loadLevelButton != null)
-            loadLevelButton.onClick.AddListener(LoadMaze);
-        else
-            Debug.LogWarning("Random level button not assigned");
+        if (defaultLevelButton != null) defaultLevelButton.onClick.AddListener(LoadDefaultLevelSelect);
+        if (customLevelButton != null) customLevelButton.onClick.AddListener(LoadCustomLevelSelect);
+        if (randomLevelButton != null) randomLevelButton.onClick.AddListener(LoadRandomLevelSelect);
+        if (loadLevelButton != null) loadLevelButton.onClick.AddListener(LoadMaze);
     }
-    public void LoadDefaultLevelSelect()
-    {
-        SceneManager.LoadSceneAsync("DefaultLevelSelect");
-    }
+    
+    public void LoadDefaultLevelSelect() => SceneManager.LoadSceneAsync("DefaultLevelSelect");
+    public void LoadCustomLevelSelect() => SceneManager.LoadSceneAsync("CustomLevelSelect");
+    public void LoadRandomLevelSelect() => SceneManager.LoadSceneAsync("RandomLevelSelect");
 
-    public void LoadCustomLevelSelect()
-    {
-        SceneManager.LoadSceneAsync("CustomLevelSelect");
-    }
-
-    public void LoadRandomLevelSelect()
-    {
-        SceneManager.LoadSceneAsync("RandomLevelSelect");
-    }
-
-    // Change to async void so we can await the file picker
     public void LoadMaze()
     {
         #if UNITY_EDITOR
-        // Editor is synchronous, so this works fine as-is
-        string path = UnityEditor.EditorUtility.OpenFilePanel("Select Maze Save File", "", "json");
+        string path = UnityEditor.EditorUtility.OpenFilePanel("Select Maze Save File", "", "fitmazesaved");
         if (!string.IsNullOrEmpty(path))
         {
             string json = File.ReadAllText(path);
@@ -66,12 +40,10 @@ public class LevelSelectButtons : MonoBehaviour
         }
 
         #elif ENABLE_WINMD_SUPPORT
-        // UWP is Asynchronous - we must wait for the UI thread
         LoadFileUWP();
 
         #else
-        // Fallback for standard builds
-        string fallbackPath = Path.Combine(Application.persistentDataPath, "maze_save.json");
+        string fallbackPath = Path.Combine(Application.persistentDataPath, "maze_save.fitmazesaved");
         if (File.Exists(fallbackPath))
         {
             ProcessAndLoad(File.ReadAllText(fallbackPath));
@@ -79,25 +51,43 @@ public class LevelSelectButtons : MonoBehaviour
         #endif
     }
 
-    // A helper method to keep the code clean
     private void ProcessAndLoad(string json)
     {
         if (string.IsNullOrEmpty(json)) return;
 
         SaveMazeData data = JsonUtility.FromJson<SaveMazeData>(json);
         
-        // Set the static data for the next scene to read
         MazeSaveHolder.LoadedData = data;
         MazeSaveHolder.HasLoadedData = true;
 
-        Debug.Log("Success! Loading scene...");
-        SceneManager.LoadScene("RandomLevel");
+        if (GameManager.Instance != null)
+        {
+            // 1. Restore Base Level Identifiers
+            if (!string.IsNullOrEmpty(data.levelName)) 
+                GameManager.Instance.SetCurrentLevelName(data.levelName);
+            if (!string.IsNullOrEmpty(data.customLevelPath)) 
+                GameManager.Instance.CurrentCustomLevelPath = data.customLevelPath;
+
+            // 2. Restore Random Level Continuous Session State
+            GameManager.Instance.IsContinuingSession = data.isContinuingSession;
+
+            // 3. Restore Custom Level Campaign Queue
+            if (data.customLevelQueue != null && data.customLevelQueue.Count > 0)
+            {
+                GameManager.Instance.CustomLevelQueue = new System.Collections.Generic.List<string>(data.customLevelQueue);
+                GameManager.Instance.CurrentCustomLevelIndex = data.currentCustomLevelIndex;
+            }
+        }
+
+        string targetScene = !string.IsNullOrEmpty(data.sceneName) ? data.sceneName : "RandomLevel";
+
+        Debug.Log($"Success! Loading scene context: {targetScene}...");
+        SceneManager.LoadScene(targetScene);
     }
 
     #if ENABLE_WINMD_SUPPORT
     private void LoadFileUWP()
     {
-        // 1. Move to Windows UI Thread to show the Picker
         UnityEngine.WSA.Application.InvokeOnUIThread(async () => 
         {
             try 
@@ -105,14 +95,12 @@ public class LevelSelectButtons : MonoBehaviour
                 FileOpenPicker openPicker = new FileOpenPicker();
                 openPicker.ViewMode = PickerViewMode.List;
                 openPicker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
-                openPicker.FileTypeFilter.Add(".json");
+                openPicker.FileTypeFilter.Add(".fitmazesaved");
 
                 StorageFile file = await openPicker.PickSingleFileAsync();
                 if (file != null)
                 {
                     string json = await FileIO.ReadTextAsync(file);
-                    
-                    // 2. CRITICAL: Move BACK to the Unity App Thread to load the scene
                     UnityEngine.WSA.Application.InvokeOnAppThread(() => 
                     {
                         ProcessAndLoad(json);

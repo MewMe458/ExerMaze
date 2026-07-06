@@ -893,12 +893,13 @@ PlayerSettings:
   syncCapabilities: 0
   platformCapabilities:
     WindowsStoreApps:
+      InternetClient: True
       Bluetooth: True
       PrivateNetworkClientServer: True
       SystemManagement: True
       InternetClientServer: True
       RemovableStorage: True
-      InternetClient: True
+      PicturesLibrary: True
       Proximity: True
   metroTargetDeviceFamilies: {}
   metroFTAName: fitmaze
@@ -907,6 +908,8 @@ PlayerSettings:
     fileType: .fitmaze
   - contentType: application/fitcampaign
     fileType: .fitcampaign
+  - contentType: application/fitmazesaved
+    fileType: .fitmazesaved
   metroProtocolName: 
   vcxProjDefaultLanguage: 
   XboxOneProductId: 

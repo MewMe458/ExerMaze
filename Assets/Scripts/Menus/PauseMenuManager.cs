@@ -25,8 +25,8 @@ public class PauseMenuManager : BaseMenuManager
         }
         else
         {
-            SceneManager.UnloadSceneAsync("PauseMenu"); // Fallback if LevelManager is not found
-            Time.timeScale = 1f; // Resume time
+            SceneManager.UnloadSceneAsync("PauseMenu"); 
+            Time.timeScale = 1f; 
             BLEManager.Instance?.bleConnect?.UpdateSensorStateOnBLE("start");
         }
     }
@@ -34,17 +34,48 @@ public class PauseMenuManager : BaseMenuManager
     public async void SaveMazeDetails()
     {
         Debug.Log("Save Button Clicked!");
-        if (AutoMG3D_1010.Instance == null)
+        string activeScene = SceneManager.GetActiveScene().name;
+
+        if (activeScene != "DefaultLevel" && activeScene != "CustomLevel" && activeScene != "RandomLevel")
         {
-            Debug.LogError("PauseMenuManager: Could not find the Maze Instance! Is the RandomLevel scene loaded?");
+            Debug.LogError("PauseMenuManager: Not in a valid maze scene to save.");
             return;
         }
 
-        SaveMazeData data = AutoMG3D_1010.Instance.GetMazeSaveData();
+        SaveMazeData data;
+
+        if (AutoMG3D_1010.Instance != null)
+        {
+            data = AutoMG3D_1010.Instance.GetMazeSaveData();
+        }
+        else
+        {
+            data = CaptureGlobalMazeData();
+        }
+
+        // Store scene context and level identifiers
+        data.sceneName = activeScene;
+        if (GameManager.Instance != null)
+        {
+            data.levelName = GameManager.Instance.CurrentLevelName;
+            data.customLevelPath = GameManager.Instance.CurrentCustomLevelPath;
+            
+            // Capture Random Level Continuous State
+            data.isContinuingSession = GameManager.Instance.IsContinuingSession;
+
+            // Capture Custom Level Campaign State (Assuming GameManager has these exposed)
+            // If your GameManager uses slightly different names for the queue/index, update them here.
+            if (GameManager.Instance.CustomLevelQueue != null)
+            {
+                data.customLevelQueue = new List<string>(GameManager.Instance.CustomLevelQueue);
+                data.currentCustomLevelIndex = GameManager.Instance.CurrentCustomLevelIndex;
+            }
+        }
+
         string json = JsonUtility.ToJson(data, true);
         
         #if UNITY_EDITOR
-        string path = UnityEditor.EditorUtility.SaveFilePanel("Save Maze Details", "", "maze_save.json", "json");
+        string path = UnityEditor.EditorUtility.SaveFilePanel("Save Maze Details", "", "maze_save.fitmazesaved", "fitmazesaved");
         if (!string.IsNullOrEmpty(path))
         {
             File.WriteAllText(path, json);
@@ -55,39 +86,85 @@ public class PauseMenuManager : BaseMenuManager
         #endif
     }
 
+    private SaveMazeData CaptureGlobalMazeData()
+    {
+        SaveMazeData data = new SaveMazeData();
+        if (GameManager.Instance != null)
+        {
+            data.width = GameManager.Instance.MazeWidth;
+            data.depth = GameManager.Instance.MazeDepth;
+        }
+
+        CaptureObjects(data.walls, "Wall");
+        CaptureObjects(data.npcs, "NPC");
+        CaptureObjects(data.collectibles, "Collectibles");
+        CaptureObjects(data.endGoal, "MazeGoal");
+
+        GameObject floorObj = GameObject.Find("Maze Floor");
+        if (floorObj != null)
+        {
+            data.floor = new ObjectData
+            {
+                type = "Floor",
+                position = new SerializableVector3(floorObj.transform.position),
+                rotation = new SerializableVector3(floorObj.transform.eulerAngles),
+                scale = new SerializableVector3(floorObj.transform.localScale)
+            };
+        }
+
+        GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+        if (playerObj != null)
+        {
+            data.playerData = new ObjectData
+            {
+                type = "Player",
+                position = new SerializableVector3(playerObj.transform.position),
+                rotation = new SerializableVector3(playerObj.transform.eulerAngles),
+                scale = new SerializableVector3(playerObj.transform.localScale)
+            };
+        }
+
+        return data;
+    }
+
+    private void CaptureObjects(List<ObjectData> list, string tag)
+    {
+        foreach (GameObject obj in GameObject.FindGameObjectsWithTag(tag))
+        {
+            int matIdx = -1; 
+            list.Add(new ObjectData
+            {
+                type = obj.name.Replace("(Clone)", "").Trim(),
+                position = new SerializableVector3(obj.transform.position),
+                rotation = new SerializableVector3(obj.transform.eulerAngles),
+                scale = new SerializableVector3(obj.transform.localScale),
+                materialIndex = matIdx
+            });
+        }
+    }
+
 #if ENABLE_WINMD_SUPPORT
     private async Task SaveFileUWP(string content)
     {
-        // We move everything inside the UI Thread block to ensure the Picker 
-        // is created on the same thread that displays it.
         UnityEngine.WSA.Application.InvokeOnUIThread(async () => 
         {
             try 
             {
                 FileSavePicker savePicker = new FileSavePicker();
-
-                // Get the window handle for the current view
-                // This is required for the picker to know which window to 'pop up' over.
                 var window = Windows.UI.Core.CoreWindow.GetForCurrentThread();
                 
                 if (window != null)
                 {
                     savePicker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
-                    savePicker.FileTypeChoices.Add("JSON File", new List<string>() { ".json" });
+                    savePicker.FileTypeChoices.Add("FitMaze Saved File", new List<string>() { ".fitmazesaved" });
                     savePicker.SuggestedFileName = "maze_save";
 
-                    // Open the picker
                     StorageFile file = await savePicker.PickSaveFileAsync();
 
                     if (file != null)
                     {
-                        // 1. Write the content to the file
                         await FileIO.WriteTextAsync(file, content);
-
-                        // 2. Get the full directory path
                         string savedPath = file.Path;
-
-                        // 3. Output to the console as requested (Red Error icon)
                         Debug.LogError("File saved in " + savedPath);
                     }
                     else
@@ -105,8 +182,6 @@ public class PauseMenuManager : BaseMenuManager
                 Debug.LogError("UWP Save Error: " + ex.Message);
             }
         }, false);
-
-        // We return a completed task because the logic is handled inside the InvokeOnUIThread
         await Task.CompletedTask;
     }
 #endif

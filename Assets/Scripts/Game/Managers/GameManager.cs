@@ -16,24 +16,24 @@ public class GameManager : MonoBehaviour
     public string CurrentLevelName { get; private set; }
     public string CurrentCustomLevelPath { get; set; }
 
-    // --- NEW: MULTI-LEVEL PLAYLIST QUEUE ---
-    public Queue<string> CustomLevelPlayQueue { get; private set; } = new Queue<string>();
+    // --- UPDATED: MULTI-LEVEL PLAYLIST QUEUE ---
+    // Switched to a List and an integer index to allow serializing the state for save files
+    public List<string> CustomLevelQueue { get; set; } = new List<string>();
+    public int CurrentCustomLevelIndex { get; set; } = -1;
 
     public void SetupCustomLevelQueue(List<string> paths)
     {
-        CustomLevelPlayQueue.Clear();
-        foreach (var path in paths)
-        {
-            CustomLevelPlayQueue.Enqueue(path);
-        }
-        Debug.Log($"GameManager: Queue initialized with {CustomLevelPlayQueue.Count} custom levels.");
+        CustomLevelQueue = new List<string>(paths);
+        CurrentCustomLevelIndex = -1; // Reset before the first advancement
+        Debug.Log($"GameManager: Queue initialized with {CustomLevelQueue.Count} custom levels.");
     }
 
     public bool AdvanceToNextCustomLevel()
     {
-        if (CustomLevelPlayQueue != null && CustomLevelPlayQueue.Count > 0)
+        if (CustomLevelQueue != null && CurrentCustomLevelIndex + 1 < CustomLevelQueue.Count)
         {
-            CurrentCustomLevelPath = CustomLevelPlayQueue.Dequeue();
+            CurrentCustomLevelIndex++;
+            CurrentCustomLevelPath = CustomLevelQueue[CurrentCustomLevelIndex];
             Debug.Log($"GameManager: Advanced to next custom level: {CurrentCustomLevelPath}");
             return true;
         }

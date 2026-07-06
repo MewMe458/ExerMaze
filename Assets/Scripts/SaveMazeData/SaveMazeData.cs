@@ -1,8 +1,4 @@
-using System.Collections;
 using System.Collections.Generic;
-using System.Security.Policy;
-using Unity.AI.Navigation;
-using Unity.Collections;
 using UnityEngine;
 
 [System.Serializable]
@@ -19,19 +15,28 @@ public class ObjectData
     public string type;
     public SerializableVector3 position;
     public SerializableVector3 rotation;
-    public SerializableVector3 scale; // Added scale
-    public int materialIndex = -1;    // Added to track wallMaterials array
+    public SerializableVector3 scale; 
+    public int materialIndex = -1;    
 }
 
 [System.Serializable]
 public class SaveMazeData
 {
+    public string sceneName; 
+    public string levelName;       
+    public string customLevelPath; 
+
+    // NEW: Campaign and Continuous Session Tracking
+    public List<string> customLevelQueue = new List<string>();
+    public int currentCustomLevelIndex = 0;
+    public bool isContinuingSession = false;
+
     public int width;
     public int depth;
     public List<ObjectData> walls = new List<ObjectData>();
     public List<ObjectData> npcs = new List<ObjectData>();
     public List<ObjectData> collectibles = new List<ObjectData>();
     public List<ObjectData> endGoal = new List<ObjectData>();
-    public ObjectData floor; // Added specific field for floor
+    public ObjectData floor; 
     public ObjectData playerData;
 }
