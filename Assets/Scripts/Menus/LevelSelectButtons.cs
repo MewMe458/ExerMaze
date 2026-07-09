@@ -27,7 +27,7 @@ public class LevelSelectButtons : MonoBehaviour
     
     public void LoadDefaultLevelSelect() => SceneManager.LoadSceneAsync("DefaultLevelSelect");
     public void LoadCustomLevelSelect() => SceneManager.LoadSceneAsync("CustomLevelSelect");
-    public void LoadRandomLevelSelect() => SceneManager.LoadSceneAsync("RandomLevelSelect");
+    public void LoadRandomLevelSelect() => SceneManager.LoadSceneAsync("ShapeMazeSelect");
 
     public void LoadMaze()
     {
@@ -38,41 +38,46 @@ public class LevelSelectButtons : MonoBehaviour
             string json = File.ReadAllText(path);
             ProcessAndLoad(json);
         }
-
         #elif ENABLE_WINMD_SUPPORT
         LoadFileUWP();
-
-        #else
-        string fallbackPath = Path.Combine(Application.persistentDataPath, "maze_save.fitmazesaved");
-        if (File.Exists(fallbackPath))
-        {
-            ProcessAndLoad(File.ReadAllText(fallbackPath));
-        }
         #endif
     }
 
     private void ProcessAndLoad(string json)
     {
-        if (string.IsNullOrEmpty(json)) return;
-
         SaveMazeData data = JsonUtility.FromJson<SaveMazeData>(json);
-        
+        if (data == null)
+        {
+            Debug.LogError("Failed to parse save file data.");
+            return;
+        }
+
         MazeSaveHolder.LoadedData = data;
         MazeSaveHolder.HasLoadedData = true;
 
         if (GameManager.Instance != null)
         {
-            // 1. Restore Base Level Identifiers
-            if (!string.IsNullOrEmpty(data.levelName)) 
-                GameManager.Instance.SetCurrentLevelName(data.levelName);
-            if (!string.IsNullOrEmpty(data.customLevelPath)) 
-                GameManager.Instance.CurrentCustomLevelPath = data.customLevelPath;
+            GameManager.Instance.SetMazeSize(data.width, data.depth);
+            
+            // Restore saved shape back into GameManager context
+            if (!string.IsNullOrEmpty(data.mazeShape))
+            {
+                GameManager.Instance.SetMazeShapeFromString(data.mazeShape);
+            }
 
-            // 2. Restore Random Level Continuous Session State
+            if (!string.IsNullOrEmpty(data.levelName))
+                GameManager.Instance.SetCurrentLevelName(data.levelName);
+            else
+                GameManager.Instance.ClearCurrentLevelName();
+
+            if (!string.IsNullOrEmpty(data.customLevelPath))
+                GameManager.Instance.CurrentCustomLevelPath = data.customLevelPath;
+            else
+                GameManager.Instance.ClearCurrentCustomLevelPath();
+
             GameManager.Instance.IsContinuingSession = data.isContinuingSession;
 
-            // 3. Restore Custom Level Campaign Queue
-            if (data.customLevelQueue != null && data.customLevelQueue.Count > 0)
+            if (data.customLevelQueue != null)
             {
                 GameManager.Instance.CustomLevelQueue = new System.Collections.Generic.List<string>(data.customLevelQueue);
                 GameManager.Instance.CurrentCustomLevelIndex = data.currentCustomLevelIndex;
@@ -88,6 +93,7 @@ public class LevelSelectButtons : MonoBehaviour
     #if ENABLE_WINMD_SUPPORT
     private void LoadFileUWP()
     {
+        // UWP File Picker Code remains completely identical
         UnityEngine.WSA.Application.InvokeOnUIThread(async () => 
         {
             try 

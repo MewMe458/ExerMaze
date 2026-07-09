@@ -25,8 +25,9 @@ public class SaveMazeData
     public string sceneName; 
     public string levelName;       
     public string customLevelPath; 
+    public string mazeShape; 
 
-    // NEW: Campaign and Continuous Session Tracking
+    // Campaign and Continuous Session Tracking
     public List<string> customLevelQueue = new List<string>();
     public int currentCustomLevelIndex = 0;
     public bool isContinuingSession = false;
@@ -37,6 +38,9 @@ public class SaveMazeData
     public List<ObjectData> npcs = new List<ObjectData>();
     public List<ObjectData> collectibles = new List<ObjectData>();
     public List<ObjectData> endGoal = new List<ObjectData>();
-    public ObjectData floor; 
+    
+    public ObjectData floor; // Left for backwards compatibility with older saves
+    public List<ObjectData> floors = new List<ObjectData>(); // NEW: Captures all segmented mask floor tiles
+    
     public ObjectData playerData;
 }

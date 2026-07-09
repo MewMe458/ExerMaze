@@ -7,24 +7,25 @@ public class GameManager : MonoBehaviour
 
     public enum GameState
     {
-        Menu,       // User is in the menu, Bluetooth data should be ignored
-        InGame      // User is in a game level, Bluetooth data should control the character
+        Menu,       
+        InGame      
     }
+
+    public enum MazeShape { Square, Circle, Triangle }
+    public MazeShape CurrentMazeShape { get; private set; } = MazeShape.Square;
 
     public GameState CurrentState { get; private set; } = GameState.Menu;
 
     public string CurrentLevelName { get; private set; }
     public string CurrentCustomLevelPath { get; set; }
 
-    // --- UPDATED: MULTI-LEVEL PLAYLIST QUEUE ---
-    // Switched to a List and an integer index to allow serializing the state for save files
     public List<string> CustomLevelQueue { get; set; } = new List<string>();
     public int CurrentCustomLevelIndex { get; set; } = -1;
 
     public void SetupCustomLevelQueue(List<string> paths)
     {
         CustomLevelQueue = new List<string>(paths);
-        CurrentCustomLevelIndex = -1; // Reset before the first advancement
+        CurrentCustomLevelIndex = -1; 
         Debug.Log($"GameManager: Queue initialized with {CustomLevelQueue.Count} custom levels.");
     }
 
@@ -39,27 +40,39 @@ public class GameManager : MonoBehaviour
         }
         return false;
     }
-    // ---------------------------------------
 
-    // --- UPDATED: HOLD LOADED MAZE DATA ---
-    public MazeData LoadedMazeData { get; set; } // Now the 3D generator can access wall indices
-    // --------------------------------------
+    public MazeData LoadedMazeData { get; set; } 
 
-    // ------------------------------
-    // NEW MAZE SIZE FIELDS
-    // ------------------------------
     public int MazeWidth { get; private set; }
     public int MazeDepth { get; private set; }
 
-    public void SetMazeSize(int width, int depth)
+    // FIXED: Restored the 3-argument overload so all buttons compile
+    public void SetMazeSize(int width, int depth, MazeShape shape = MazeShape.Square)
     {
         MazeWidth = width;
         MazeDepth = depth;
-        Debug.Log($"GameManager: Maze size set to {width} x {depth}");
+        CurrentMazeShape = shape;
+        Debug.Log($"GameManager: Maze size set to {width} x {depth} ({shape})");
     }
-    // ------------------------------
 
-    // --- NEW PERSISTENT GPX DATA ---
+    public void SetMazeShape(MazeShape shape)
+    {
+        CurrentMazeShape = shape;
+        Debug.Log($"GameManager: Maze shape explicitly set to {shape}");
+    }
+
+    public void SetMazeShapeFromString(string shapeStr)
+    {
+        if (System.Enum.TryParse(shapeStr, out MazeShape parsedShape))
+        {
+            SetMazeShape(parsedShape);
+        }
+        else
+        {
+            SetMazeShape(MazeShape.Square);
+        }
+    }
+
     public bool IsContinuingSession { get; set; } = false;
     public List<(double lat, double lon, float ele, string time)> SessionCharacterPoints = new();
     public List<(double lat, double lon, float ele, string time)> SessionRealLifePoints = new();
