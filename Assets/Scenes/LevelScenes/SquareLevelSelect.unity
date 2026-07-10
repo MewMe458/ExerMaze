@@ -515,7 +515,7 @@ MonoBehaviour:
   level12x12Button: {fileID: 37684855}
   level24x24Button: {fileID: 589183832}
   level36x36Button: {fileID: 1869068059}
-  customRandomLevelButton: {fileID: 405165715}
+  customSquareButton: {fileID: 405165715}
   levelName: 
 --- !u!1 &589183830
 GameObject:

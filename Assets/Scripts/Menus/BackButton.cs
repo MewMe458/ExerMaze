@@ -21,7 +21,7 @@ public class BackButton : MonoBehaviour
     {
         string currentScene = SceneManager.GetActiveScene().name;
 
-        if (currentScene.EndsWith("LevelSelect"))
+        if (currentScene.EndsWith("LevelSelect") || currentScene.EndsWith("ShapeMazeSelect") || currentScene.EndsWith("MazeSize"))
         {
             SceneManager.LoadScene("LevelSelectMenu");
         }
